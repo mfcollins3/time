@@ -1,41 +1,47 @@
 {
-    "name": "@mfcollins3/time",
-    "version": "0.0.1",
-    "description": "Naked Time is a productivity application that helps users to manage their time effectively",
-    "keywords": [
-        "analysis",
-        "management",
-        "pomodoro",
-        "productivity",
-        "time"
-    ],
-    "homepage": "https://www.nakedtime.app",
-    "bugs": {
-        "url": "https://github.com/mfcollins3/time/issues",
-        "email": "mfcollins3@me.com"
+  "name": "@mfcollins3/time",
+  "version": "0.0.1",
+  "description": "Naked Time is a productivity application that helps users to manage their time effectively",
+  "keywords": [
+    "analysis",
+    "management",
+    "pomodoro",
+    "productivity",
+    "time"
+  ],
+  "homepage": "https://www.nakedtime.app",
+  "bugs": {
+    "url": "https://github.com/mfcollins3/time/issues",
+    "email": "mfcollins3@me.com"
+  },
+  "license": "UNLICENSED",
+  "author": {
+    "name": "Michael Collins",
+    "email": "mfcollins3@me.com",
+    "url": "https://michaelfcollins3.dev"
+  },
+  "repository": "github:mfcollins3/time",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7"
+  },
+  "engines": {
+    "node": "24.10.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "onFail": "warn"
     },
-    "license": "UNLICENSED",
-    "author": {
-        "name": "Michael Collins",
-        "email": "mfcollins3@me.com",
-        "url": "https://michaelfcollins3.dev"
-    },
-    "repository": "github:mfcollins3/time",
-    "scripts": {},
-    "devDependencies": {},
-    "engines": {
-        "node": "24.10.0"
-    },
-    "devEngines": {
-        "packageManager": {
-            "name": "npm",
-            "onFail": "warn"
-        },
-        "runtime": {
-            "name": "node",
-            "onFail": "warn",
-            "version": "24.10.0"
-        }
-    },
-    "private": true
+    "runtime": {
+      "name": "node",
+      "onFail": "warn",
+      "version": "24.10.0"
+    }
+  },
+  "private": true
 }
