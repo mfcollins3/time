@@ -1,0 +1,71 @@
+name: Linux Builds
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Build Linux ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev alsa-utils alsa-tools
+
+      - name: Build debug binary
+        env:
+          CGO_ENABLED: 1
+        run: |
+          mkdir -p dist/linux-${{ matrix.arch }}/debug
+          go build -v -o dist/linux-${{ matrix.arch }}/debug/time ./cmd/time
+
+      - name: Build release binary
+        env:
+          CGO_ENABLED: 1
+        run: |
+          mkdir -p dist/linux-${{ matrix.arch }}/release
+          go build -v -ldflags="-s -w" -o dist/linux-${{ matrix.arch }}/release/time ./cmd/time
+
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-linux-${{ matrix.arch }}-debug
+          path: dist/linux-${{ matrix.arch }}/debug/
+          if-no-files-found: error
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-linux-${{ matrix.arch }}
+          path: dist/linux-${{ matrix.arch }}/release/
+          if-no-files-found: error
