@@ -7,13 +7,15 @@
             "autoPull": false
         },
         "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/devcontainers/features/node:1": {
             "version": "24.10.0"
         },
         "ghcr.io/devcontainers/features/go:1": {
-            "version": "1.25.2"
+            "version": "1.25.3"
         }
     },
     "remoteUser": "vscode",
+    "onCreateCommand": "bash .devcontainer/scripts/on-create.sh",
     "postCreateCommand": "bash .devcontainer/scripts/post-create.sh"
 }
