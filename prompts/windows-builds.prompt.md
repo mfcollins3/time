@@ -16,8 +16,6 @@ Create a GitHub Actions workflow to produce Linux builds of Time.
 - The Time product uses SQLite, so CGO should be enabled
 - The workflow should produce both debug and smaller release builds of the Time programs
     - Release builds should use the `strip` command to remove debug symbols from the debug builds
-- The workflow should use a matrix build if possible to build for both ARM64 and x64 architectures concurrently
-    - Use the `windows-11-arm` runner for ARM64 builds
-    - Use the `windows-2025` runner for x86 builds
+- The workflow should build for x64 only using the `windows-2025` runner.
 - Produce debug and release builds for each architecture. The release builds should use the `strip` command or linker flags to remove debug symbols from the debug builds.
 - Keep the output executable as `time`. Use output subdirectories to separate the debug and release builds for each architecture.
