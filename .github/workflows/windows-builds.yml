@@ -37,6 +37,14 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
+      - name: Install ARM64 build tools
+        if: matrix.arch == 'arm64'
+        run: |
+          choco install -y llvm --version=19.1.7
+          echo "CC=clang" >> $env:GITHUB_ENV
+          echo "CXX=clang++" >> $env:GITHUB_ENV
+        shell: pwsh
+
       - name: Build debug binary
         env:
           CGO_ENABLED: 1
