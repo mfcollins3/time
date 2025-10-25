@@ -25,4 +25,5 @@ jobs:
             build-linux
             build-docker
             build-windows
+            build-macos
           dispatch-type: repository_dispatch

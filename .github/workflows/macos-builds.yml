@@ -1,0 +1,155 @@
+name: macOS Builds
+
+on:
+  repository_dispatch:
+    types: [build-macos-command]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    name: Build macOS ARM64
+    runs-on: macos-15
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Build debug binary
+        env:
+          CGO_ENABLED: 1
+          GOARCH: arm64
+          GOOS: darwin
+        run: |
+          mkdir -p dist/macos-arm64/debug
+          go build -v -o dist/macos-arm64/debug/time ./cmd/time
+
+      - name: Build release binary
+        env:
+          CGO_ENABLED: 1
+          GOARCH: arm64
+          GOOS: darwin
+        run: |
+          mkdir -p dist/macos-arm64/release
+          go build -v -ldflags="-s -w" -o dist/macos-arm64/release/time ./cmd/time
+
+      - name: Strip debug symbols from release binary
+        run: |
+          strip dist/macos-arm64/release/time
+
+      - name: Import code signing certificate
+        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # Import certificate from secrets
+          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Code sign binaries
+        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          # Sign debug binary
+          codesign --force --sign "$APPLE_SIGNING_IDENTITY" \
+            --options runtime \
+            --timestamp \
+            dist/macos-arm64/debug/time
+
+          # Sign release binary
+          codesign --force --sign "$APPLE_SIGNING_IDENTITY" \
+            --options runtime \
+            --timestamp \
+            dist/macos-arm64/release/time
+
+          # Verify signatures
+          codesign --verify --verbose dist/macos-arm64/debug/time
+          codesign --verify --verbose dist/macos-arm64/release/time
+
+      - name: Notarize binaries
+        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Create zip files for notarization
+          cd dist/macos-arm64/debug
+          zip time-debug.zip time
+          cd ../../../
+          
+          cd dist/macos-arm64/release
+          zip time-release.zip time
+          cd ../../../
+
+          # Notarize debug binary
+          xcrun notarytool submit dist/macos-arm64/debug/time-debug.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Notarize release binary
+          xcrun notarytool submit dist/macos-arm64/release/time-release.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Remove zip files after notarization
+          rm dist/macos-arm64/debug/time-debug.zip
+          rm dist/macos-arm64/release/time-release.zip
+
+      - name: Staple notarization ticket
+        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
+        run: |
+          # Staple notarization ticket to binaries
+          xcrun stapler staple dist/macos-arm64/debug/time
+          xcrun stapler staple dist/macos-arm64/release/time
+
+      - name: Clean up keychain
+        if: always() && github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain $KEYCHAIN_PATH
+          fi
+
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-macos-arm64-debug
+          path: dist/macos-arm64/debug/
+          if-no-files-found: error
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-macos-arm64
+          path: dist/macos-arm64/release/
+          if-no-files-found: error

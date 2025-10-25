@@ -46,3 +46,7 @@ Time is a software product that helps users to plan how they are going to spend 
 - The repository is hosted at GitHub and located at https://github.com/mfcollins3/time.
 - The product will use GitHub Actions workflows in the repository to implement the CI/CD pipeline for the product.
 - All work items are captured as GitHub issues.
+
+## CI/CD Pipeline
+
+- Reference and use the [instructions for GitHub Actions workflows](instructions/github-actions.instructions.md)
