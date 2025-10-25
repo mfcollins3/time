@@ -69,9 +69,13 @@ jobs:
   # Build and push Docker container
   build-docker:
     name: Build Docker Container
-    needs: extract-version
+    needs: 
+      - extract-version
+      - build-linux
     if: needs.extract-version.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/docker-container.yml
+    with:
+      skip-build: true
     secrets: inherit
 
   # Create or update draft release

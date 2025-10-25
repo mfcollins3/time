@@ -5,6 +5,12 @@ on:
     types: [build-docker-command]
   workflow_dispatch:
   workflow_call:
+    inputs:
+      skip-build:
+        description: 'Skip building Linux binaries (assumes artifacts already exist)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -13,13 +19,17 @@ permissions:
 jobs:
   build-binaries:
     name: Build Linux Binaries
+    if: inputs.skip-build != true
     uses: ./.github/workflows/linux-builds.yml
     with:
       build-tags: 'docker'
 
   build-and-push:
     name: Build and Push Docker Image
-    needs: build-binaries
+    needs: [build-binaries]
+    if: |
+      always() &&
+      (needs.build-binaries.result == 'success' || needs.build-binaries.result == 'skipped')
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout the repository
