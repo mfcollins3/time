@@ -1,0 +1,43 @@
+# Ignore Git metadata
+.git
+.gitignore
+.gitattributes
+
+# Ignore GitHub files
+.github/
+
+# Ignore build artifacts and temporary files
+dist/
+*.out
+*.test
+*.prof
+
+# Ignore development container files
+.devcontainer/
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore Node.js files
+node_modules/
+package.json
+package-lock.json
+
+# Ignore Go module cache files (not needed in container)
+go.sum
+
+# Ignore documentation and prompts
+*.md
+prompts/
+
+# Ignore scripts (not needed in final container)
+scripts/
+
+# Ignore Husky hooks
+.husky/
+
+# Ignore test files
+*_test.go
+
+# Keep only necessary files for the container build
+# The workflow will download the built binary artifact
