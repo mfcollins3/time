@@ -1,0 +1,28 @@
+name: Slash Command Dispatch
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dispatch:
+    name: Dispatch Slash Commands
+    if: github.event.issue.pull_request
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v5
+
+      - name: Dispatch slash commands
+        uses: peter-evans/slash-command-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commands: |
+            build-linux
+            build-docker
+            build-windows
+          dispatch-type: repository_dispatch

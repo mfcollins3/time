@@ -4,9 +4,8 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+  repository_dispatch:
+    types: [build-windows-command]
   workflow_dispatch:
 
 permissions:
