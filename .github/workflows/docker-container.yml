@@ -17,6 +17,8 @@ jobs:
   build-binaries:
     name: Build Linux Binaries
     uses: ./.github/workflows/linux-builds.yml
+    with:
+      build-tags: 'docker'
 
   build-and-push:
     name: Build and Push Docker Image
