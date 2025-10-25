@@ -86,3 +86,31 @@ You are responsible for complying with all applicable laws and regulations, incl
 This License constitutes the entire agreement between you and the copyright holder regarding the Software. The copyright holder may update this License for future releases. Your continued use of future releases is subject to the then-current license accompanying those releases.
 
 For inquiries about commercial licensing, please contact the copyright holder via the website linked above.
+
+## FAQ
+
+### 1. What is a Source-Available License?
+
+A _source-available_ license allows me to openly share the source code for products that I am developing with others, while retaining my commercial rights to the product. I am granting you access to review my source code and make derivative works of my product for your own personal use or company's use. In the future, if I commercialize the product, you can continue to use the source code and use your derivative works, but you will be required to purchase a commercial license to do so.
+
+### 2. Will the Time Product Remain Source-Available After Commercialization?
+
+Yes. If in the future, I commercialize the Time product and begin charging a fee to license the product, the source code for Time will remain source-available and you will continue to be able to access the latest source code and use your own derivative versions if you have created them.
+
+### 3. Why are you Licensing Time like this?
+
+While I contribute to open source and have released things I have created as open source, I am a professional software developer with goals and a family and I would like to be compensated for the use of certain works that I create with potential commercial value. Once the product gets to a point where it can be commercialized, it's in everyone's best interest that I have this right as a commercial license brings with it the expectations of continued investment by adding new features, fixing bugs, and continuing to evolve the product; and customer support for the product.
+
+By developing time under a source-available license, I am able to share the product and develop it openly. I do not have to work on it in the shadows. If my work is good enough, early adopters can begin to play with the product and provide me with feedback during the early parts of development to make it better.
+
+### 4. If I Create an Extension or Integration to your Product, Can I Charge for Its Use?
+
+Yes. Under the license terms, any extensions or integrations that use anything that is deemed a Public API or package (code under the `/pkg` directory or REST, gRPC, or MCP APIs), or code that directly accesses and uses the user's data in the SQLite database or other data stores, or that invokes CLI commands exposed by the Time CLI interface are your product and you can charge for your extensions if you wish. 
+
+Extensions and integrations should be original works. If you directly copy and reuse code from my product in your extension, then you are violating the copyright on my creation and that would not be considered an original work.
+
+If you need code that I have written in my product to make your extension or integration work, reach out and talk to me about it either via email or, preferably, in [GitHub Discussions](https://github.com/mfcollins3/time.discussions). If I can expose that functionality for you to reuse, I'm happy to do it if it makes sense. If it doesn't make sense, but I agree that it's critical for your integration to work, I may grant you written permission to use my code. But I'm very interested in building an open and extensible product and supporting a developer community that wants to build on top of my work, so if I can help you to complete your vision, I'm happy to do so. Just keep in mind that I have to balance the good of all users and I have a responsibility to ensure that I continue to make the product usable by everyone.
+
+### 5. So I Can Use the Source Code and Make Modifications to It?
+
+Yes. You can take my source code and make modifications to it, as long as it's for your own personal or internal use. If you're a company or work for a company and want to use my product for your company, you can create your own version of my product for your company. But keep in mind, if/when I commercialize it, you will still be able to continue to use your derivative version, but you must obtain commercial licenses for yourself (and any users if you are a commercial entity or business).
