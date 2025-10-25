@@ -98,9 +98,28 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for tag comparison
 
-      - name: Download all artifacts
+      - name: Download Linux AMD64 artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: time-linux-amd64*
+          path: ./artifacts
+
+      - name: Download Linux ARM64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: time-linux-arm64*
+          path: ./artifacts
+
+      - name: Download macOS ARM64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: time-macos-arm64*
+          path: ./artifacts
+
+      - name: Download Windows x64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: time-windows-x64*
           path: ./artifacts
 
       - name: Create release archives
