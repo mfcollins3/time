@@ -35,7 +35,7 @@ Time is a software product that helps users to plan how they are going to spend 
 ## Platform Support
 
 - Time is supported on Microsoft Windows, Apple macOS, and Linux.
-- Microsoft Windows support is limited to the x86 architecture.
+- Microsoft Windows is supported only on the x64 architecture.
 - Apple macOS support is limited to the ARM64 architecture.
 - Linux should support both the ARM64 and AMD64/x64 architectures.
 - Time should be distributable as a Docker container.
