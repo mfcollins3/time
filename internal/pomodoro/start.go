@@ -1,20 +1,14 @@
 package pomodoro
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/gen2brain/beeep"
-	"github.com/gopxl/beep"
-	"github.com/gopxl/beep/mp3"
-	"github.com/gopxl/beep/speaker"
 	"gorm.io/gorm"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
@@ -71,55 +65,6 @@ func Start(ctx context.Context) error {
 		case <-done:
 		case <-timeoutCtx.Done():
 		}
-	}
-
-	return nil
-}
-
-func playAlarmSound() (chan bool, error) {
-	done := make(chan bool)
-	if os.Getenv("TIME_NO_SOUND") == "1" {
-		return done, nil
-	}
-
-	streamer, format, err := mp3.Decode(
-		io.NopCloser(bytes.NewReader(alarmSound)),
-	)
-	if err != nil {
-		return done, err
-	}
-
-	defer func() {
-		_ = streamer.Close()
-	}()
-
-	err = speaker.Init(
-		format.SampleRate,
-		format.SampleRate.N(time.Second/10),
-	)
-	if err != nil {
-		return done, err
-	}
-
-	speaker.Play(beep.Seq(streamer, beep.Callback(func() {
-		done <- true
-	})))
-
-	return done, nil
-}
-
-func showDesktopNotification() error {
-	if os.Getenv("TIME_NO_DESKTOP_NOTIFICATION") == "1" {
-		return nil
-	}
-
-	err := beeep.Notify(
-		"Pomodoro Complete",
-		"Congratulations, your pomodoro is complete! You should now take a break before starting another pomodoro.",
-		"",
-	)
-	if err != nil {
-		return fmt.Errorf("failed to send desktop notification: %w", err)
 	}
 
 	return nil

@@ -8,6 +8,19 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      build-tags:
+        description: 'Go build tags (comma-separated)'
+        required: false
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      build-tags:
+        description: 'Go build tags (comma-separated)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -47,14 +60,24 @@ jobs:
           CGO_ENABLED: 1
         run: |
           mkdir -p dist/linux-${{ matrix.arch }}/debug
-          go build -v -o dist/linux-${{ matrix.arch }}/debug/time ./cmd/time
+          BUILD_TAGS="${{ inputs.build-tags }}"
+          if [ -n "$BUILD_TAGS" ]; then
+            go build -v -tags="$BUILD_TAGS" -o dist/linux-${{ matrix.arch }}/debug/time ./cmd/time
+          else
+            go build -v -o dist/linux-${{ matrix.arch }}/debug/time ./cmd/time
+          fi
 
       - name: Build release binary
         env:
           CGO_ENABLED: 1
         run: |
           mkdir -p dist/linux-${{ matrix.arch }}/release
-          go build -v -ldflags="-s -w" -o dist/linux-${{ matrix.arch }}/release/time ./cmd/time
+          BUILD_TAGS="${{ inputs.build-tags }}"
+          if [ -n "$BUILD_TAGS" ]; then
+            go build -v -ldflags="-s -w" -tags="$BUILD_TAGS" -o dist/linux-${{ matrix.arch }}/release/time ./cmd/time
+          else
+            go build -v -ldflags="-s -w" -o dist/linux-${{ matrix.arch }}/release/time ./cmd/time
+          fi
 
       - name: Upload debug artifact
         uses: actions/upload-artifact@v4
