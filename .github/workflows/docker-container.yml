@@ -1,9 +1,6 @@
 name: Docker Container
 
 on:
-  push:
-    branches:
-      - main
   repository_dispatch:
     types: [build-docker-command]
   workflow_dispatch:

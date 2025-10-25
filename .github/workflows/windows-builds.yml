@@ -1,9 +1,6 @@
 name: Windows Builds
 
 on:
-  push:
-    branches:
-      - main
   repository_dispatch:
     types: [build-windows-command]
   workflow_dispatch:

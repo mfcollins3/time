@@ -1,9 +1,6 @@
 name: Linux Builds
 
 on:
-  push:
-    branches:
-      - main
   repository_dispatch:
     types: [build-linux-command]
   workflow_dispatch:
