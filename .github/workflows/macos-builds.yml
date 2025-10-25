@@ -125,12 +125,9 @@ jobs:
           rm dist/macos-arm64/debug/time-debug.zip
           rm dist/macos-arm64/release/time-release.zip
 
-      - name: Staple notarization ticket
-        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
-        run: |
-          # Staple notarization ticket to binaries
-          xcrun stapler staple dist/macos-arm64/debug/time
-          xcrun stapler staple dist/macos-arm64/release/time
+      # Note: Stapling is not needed for bare executables.
+      # The notarization ticket is stored with Apple's servers and will be
+      # verified online when the binary is first run by Gatekeeper.
 
       - name: Clean up keychain
         if: always() && github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
