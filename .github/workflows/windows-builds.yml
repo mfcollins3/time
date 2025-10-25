@@ -1,0 +1,68 @@
+name: Windows Builds
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: windows-11-arm
+          - arch: x64
+            runner: windows-2025
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Build debug binary
+        env:
+          CGO_ENABLED: 1
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\windows-${{ matrix.arch }}\debug
+          go build -v -o dist\windows-${{ matrix.arch }}\debug\time.exe .\cmd\time
+        shell: pwsh
+
+      - name: Build release binary
+        env:
+          CGO_ENABLED: 1
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\windows-${{ matrix.arch }}\release
+          go build -v -ldflags="-s -w" -o dist\windows-${{ matrix.arch }}\release\time.exe .\cmd\time
+        shell: pwsh
+
+      - name: Upload debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-windows-${{ matrix.arch }}-debug
+          path: dist/windows-${{ matrix.arch }}/debug/
+          if-no-files-found: error
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-windows-${{ matrix.arch }}
+          path: dist/windows-${{ matrix.arch }}/release/
+          if-no-files-found: error
