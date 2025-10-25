@@ -1,0 +1,328 @@
+name: Release
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
+jobs:
+  # Extract version from release branch name
+  extract-version:
+    name: Extract Version
+    runs-on: ubuntu-24.04
+    if: startsWith(github.head_ref, 'release/') || startsWith(github.ref, 'refs/heads/release/')
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+      is_release_branch: ${{ steps.extract.outputs.is_release_branch }}
+    steps:
+      - name: Extract version from branch name
+        id: extract
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH_NAME="${{ github.head_ref }}"
+          else
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          fi
+          
+          echo "Branch name: $BRANCH_NAME"
+          
+          if [[ "$BRANCH_NAME" =~ ^release/([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "is_release_branch=true" >> "$GITHUB_OUTPUT"
+            echo "Extracted version: $VERSION"
+          else
+            echo "Not a release branch"
+            echo "is_release_branch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Build Linux binaries
+  build-linux:
+    name: Build Linux Binaries
+    needs: extract-version
+    if: needs.extract-version.outputs.is_release_branch == 'true'
+    uses: ./.github/workflows/linux-builds.yml
+    with:
+      build-tags: ''
+
+  # Build macOS binaries
+  build-macos:
+    name: Build macOS Binaries
+    needs: extract-version
+    if: needs.extract-version.outputs.is_release_branch == 'true'
+    uses: ./.github/workflows/macos-builds.yml
+
+  # Build Windows binaries
+  build-windows:
+    name: Build Windows Binaries
+    needs: extract-version
+    if: needs.extract-version.outputs.is_release_branch == 'true'
+    uses: ./.github/workflows/windows-builds.yml
+
+  # Build and push Docker container
+  build-docker:
+    name: Build Docker Container
+    needs: extract-version
+    if: needs.extract-version.outputs.is_release_branch == 'true'
+    uses: ./.github/workflows/docker-container.yml
+    secrets: inherit
+
+  # Create or update draft release
+  manage-release:
+    name: Manage GitHub Release
+    needs: 
+      - extract-version
+      - build-linux
+      - build-macos
+      - build-windows
+      - build-docker
+    runs-on: ubuntu-24.04
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Fetch all history for tag comparison
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create release archives
+        env:
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          mkdir -p release-archives
+          
+          # Linux AMD64
+          cd artifacts/time-linux-amd64
+          tar -czf ../../release-archives/time-${VERSION}-linux-amd64.tar.gz time
+          cd ../..
+          
+          cd artifacts/time-linux-amd64-debug
+          tar -czf ../../release-archives/time-${VERSION}-linux-amd64-debug.tar.gz time
+          cd ../..
+          
+          # Linux ARM64
+          cd artifacts/time-linux-arm64
+          tar -czf ../../release-archives/time-${VERSION}-linux-arm64.tar.gz time
+          cd ../..
+          
+          cd artifacts/time-linux-arm64-debug
+          tar -czf ../../release-archives/time-${VERSION}-linux-arm64-debug.tar.gz time
+          cd ../..
+          
+          # macOS ARM64
+          cd artifacts/time-macos-arm64
+          zip ../../release-archives/time-${VERSION}-macos-arm64.zip time
+          cd ../..
+          
+          cd artifacts/time-macos-arm64-debug
+          zip ../../release-archives/time-${VERSION}-macos-arm64-debug.zip time
+          cd ../..
+          
+          # Windows x64
+          cd artifacts/time-windows-x64
+          zip ../../release-archives/time-${VERSION}-windows-x64.zip time.exe
+          cd ../..
+          
+          cd artifacts/time-windows-x64-debug
+          zip ../../release-archives/time-${VERSION}-windows-x64-debug.zip time.exe
+          cd ../..
+          
+          # List created archives
+          ls -lh release-archives/
+
+      - name: Generate release notes
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          # Get the previous tag to generate changelog from
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || echo "")
+          
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, generating notes from initial commit"
+            TARGET_PARAM=""
+          else
+            echo "Generating notes from previous tag: $PREVIOUS_TAG"
+            TARGET_PARAM="--previous-tag $PREVIOUS_TAG"
+          fi
+          
+          # Generate release notes using GitHub API
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="v${VERSION}" \
+            -f target_commitish="${{ github.head_ref || github.ref_name }}" \
+            ${TARGET_PARAM:+-f previous_tag_name="$PREVIOUS_TAG"} \
+            --jq '.body' > generated-notes.md
+          
+          # Create the full release notes with download instructions
+          cat > release-notes.md << 'EOF'
+          ## Time v${{ needs.extract-version.outputs.version }}
+          
+          ### Download
+          
+          Choose the appropriate binary for your platform:
+          
+          #### Linux
+          - **AMD64 (x86_64)**: `time-${{ needs.extract-version.outputs.version }}-linux-amd64.tar.gz`
+          - **ARM64**: `time-${{ needs.extract-version.outputs.version }}-linux-arm64.tar.gz`
+          
+          #### macOS
+          - **ARM64 (Apple Silicon)**: `time-${{ needs.extract-version.outputs.version }}-macos-arm64.zip`
+          
+          #### Windows
+          - **x64**: `time-${{ needs.extract-version.outputs.version }}-windows-x64.zip`
+          
+          #### Docker
+          ```bash
+          docker pull ghcr.io/mfcollins3/time:${{ needs.extract-version.outputs.version }}
+          ```
+          
+          ### Debug Builds
+          
+          Debug builds with symbols are also available:
+          - `time-${{ needs.extract-version.outputs.version }}-linux-amd64-debug.tar.gz`
+          - `time-${{ needs.extract-version.outputs.version }}-linux-arm64-debug.tar.gz`
+          - `time-${{ needs.extract-version.outputs.version }}-macos-arm64-debug.zip`
+          - `time-${{ needs.extract-version.outputs.version }}-windows-x64-debug.zip`
+          
+          ### Installation
+          
+          #### Linux/macOS
+          ```bash
+          # Extract the archive
+          tar -xzf time-${{ needs.extract-version.outputs.version }}-linux-amd64.tar.gz
+          # or
+          unzip time-${{ needs.extract-version.outputs.version }}-macos-arm64.zip
+          
+          # Move to a directory in your PATH
+          sudo mv time /usr/local/bin/
+          
+          # Make executable (if needed)
+          chmod +x /usr/local/bin/time
+          ```
+          
+          #### Windows
+          ```powershell
+          # Extract the archive
+          Expand-Archive -Path time-${{ needs.extract-version.outputs.version }}-windows-x64.zip -DestinationPath .
+          
+          # Add to PATH or move to a directory already in PATH
+          ```
+          
+          ---
+          
+          EOF
+          
+          # Append the GitHub-generated release notes
+          cat generated-notes.md >> release-notes.md
+          
+          echo ""
+          echo "=== Generated Release Notes ==="
+          cat release-notes.md
+
+      - name: Check if release exists
+        id: check_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          if gh release view "v${VERSION}" &> /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release v${VERSION} exists"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Release v${VERSION} does not exist"
+          fi
+
+      - name: Create draft release
+        if: steps.check_release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          gh release create "v${VERSION}" \
+            --draft \
+            --title "Time v${VERSION}" \
+            --notes-file release-notes.md \
+            release-archives/*
+
+      - name: Update existing draft release
+        if: steps.check_release.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          # Delete existing assets
+          gh release view "v${VERSION}" --json assets --jq '.assets[].name' | while read asset; do
+            echo "Deleting asset: $asset"
+            gh release delete-asset "v${VERSION}" "$asset" --yes || true
+          done
+          
+          # Update release notes
+          gh release edit "v${VERSION}" \
+            --notes-file release-notes.md
+          
+          # Upload new assets
+          gh release upload "v${VERSION}" release-archives/* --clobber
+
+  # Publish final release when PR is merged
+  publish-release:
+    name: Publish GitHub Release
+    needs: extract-version
+    runs-on: ubuntu-24.04
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          # Publish the draft release (make it non-draft)
+          gh release edit "v${VERSION}" --draft=false
+          
+          echo "✅ Released Time v${VERSION}"
+          echo "Release URL: https://github.com/mfcollins3/time/releases/tag/v${VERSION}"
+
+      - name: Create Git tag
+        env:
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create and push tag if it doesn't exist
+          if ! git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            git tag -a "v${VERSION}" -m "Release v${VERSION}"
+            git push origin "v${VERSION}"
+            echo "✅ Created and pushed tag v${VERSION}"
+          else
+            echo "ℹ️ Tag v${VERSION} already exists"
+          fi
