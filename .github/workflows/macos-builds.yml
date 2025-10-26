@@ -223,6 +223,14 @@ jobs:
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
+          # Debug: Check if secret is set
+          if [ -z "$APPLE_CERTIFICATE_BASE64" ]; then
+            echo "Error: APPLE_CERTIFICATE_BASE64 secret is empty or not set"
+            exit 1
+          fi
+          
+          echo "Secret length: ${#APPLE_CERTIFICATE_BASE64} characters"
+
           # Import certificate from secrets (remove any whitespace/newlines first)
           # Use -D for decode on macOS (--decode also works but -D is more compatible)
           echo "$APPLE_CERTIFICATE_BASE64" | tr -d '\n\r\t ' | base64 -D > $CERTIFICATE_PATH
@@ -230,8 +238,8 @@ jobs:
           # Verify the certificate file was created and has content
           if [ ! -s "$CERTIFICATE_PATH" ]; then
             echo "Error: Certificate file is empty or was not created"
-            echo "Attempting to show first 100 chars of secret (masked):"
-            echo "$APPLE_CERTIFICATE_BASE64" | head -c 100
+            echo "Certificate path: $CERTIFICATE_PATH"
+            ls -la "$RUNNER_TEMP/" || true
             exit 1
           fi
           
