@@ -240,7 +240,7 @@ jobs:
     if: needs.extract-version.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/docker-container.yml
     with:
-      skip-build: true
+      skip-build: false
     secrets: inherit
 
   # Create or update draft release
