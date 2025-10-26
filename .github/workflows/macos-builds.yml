@@ -224,11 +224,14 @@ jobs:
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           # Import certificate from secrets (remove any whitespace/newlines first)
-          echo "$APPLE_CERTIFICATE_BASE64" | tr -d '\n\r' | base64 --decode > $CERTIFICATE_PATH
+          # Use -D for decode on macOS (--decode also works but -D is more compatible)
+          echo "$APPLE_CERTIFICATE_BASE64" | tr -d '\n\r\t ' | base64 -D > $CERTIFICATE_PATH
           
           # Verify the certificate file was created and has content
           if [ ! -s "$CERTIFICATE_PATH" ]; then
             echo "Error: Certificate file is empty or was not created"
+            echo "Attempting to show first 100 chars of secret (masked):"
+            echo "$APPLE_CERTIFICATE_BASE64" | head -c 100
             exit 1
           fi
           
