@@ -213,13 +213,13 @@ jobs:
       - name: Download AMD64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: time-linux-amd64
+          name: time-linux-amd64-docker
           path: ./artifacts/amd64
 
       - name: Download ARM64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: time-linux-arm64
+          name: time-linux-arm64-docker
           path: ./artifacts/arm64
 
       - name: Extract metadata for Docker

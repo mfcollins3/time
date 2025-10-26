@@ -240,16 +240,25 @@ jobs:
             go build -v -ldflags="-s -w" -o dist/linux-${{ matrix.arch }}/release/time ./cmd/time
           fi
 
+      - name: Determine artifact suffix
+        id: artifact-suffix
+        run: |
+          if [ "${{ inputs.build-tags }}" = "docker" ]; then
+            echo "suffix=-docker" >> "$GITHUB_OUTPUT"
+          else
+            echo "suffix=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload debug artifact
         uses: actions/upload-artifact@v4
         with:
-          name: time-linux-${{ matrix.arch }}-debug
+          name: time-linux-${{ matrix.arch }}-debug${{ steps.artifact-suffix.outputs.suffix }}
           path: dist/linux-${{ matrix.arch }}/debug/
           if-no-files-found: error
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: time-linux-${{ matrix.arch }}
+          name: time-linux-${{ matrix.arch }}${{ steps.artifact-suffix.outputs.suffix }}
           path: dist/linux-${{ matrix.arch }}/release/
           if-no-files-found: error
