@@ -293,6 +293,14 @@ jobs:
         run: |
           mkdir -p release-archives
           
+          # Ensure all binaries have execute permissions before archiving
+          chmod +x artifacts/time-linux-amd64/time
+          chmod +x artifacts/time-linux-amd64-debug/time
+          chmod +x artifacts/time-linux-arm64/time
+          chmod +x artifacts/time-linux-arm64-debug/time
+          chmod +x artifacts/time-macos-arm64/time
+          chmod +x artifacts/time-macos-arm64-debug/time
+          
           # Linux AMD64
           cd artifacts/time-linux-amd64
           tar -czf ../../release-archives/time-${VERSION}-linux-amd64.tar.gz time
