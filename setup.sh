@@ -2,7 +2,7 @@
 
 set -e
 
-# Pull LFS objects
+# Install and configure Git LFS; download LFS objects
 git lfs install --skip-repo
 git lfs pull
 
