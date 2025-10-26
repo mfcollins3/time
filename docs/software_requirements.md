@@ -120,6 +120,7 @@ winget install --id GitHub.cli
 ### Fast Node Manager
 
 | Operating System | Required? |
+|------------------|-----------|
 | Apple macOS | :white_check_mark: |
 | Linux | :white_check_mark: |
 | Microsoft Windows | :white_check_mark: |
@@ -141,6 +142,7 @@ winget install Schniz.fnm
 ### Node.js
 
 | Operating System | Required? |
+|------------------|-----------|
 | Apple macOS | :white_check_mark: |
 | Linux | :white_check_mark: |
 | Microsoft Windows | :white_check_mark: |
@@ -156,6 +158,7 @@ If the correct version of Node.js is not installed, you will be prompted for per
 ### Docker Desktop
 
 | Operating System | Required? |
+|------------------|-----------|
 | Apple macOS | :grey_question: |
 | Linux | :grey_question: |
 | Microsoft Windows | :grey_question: |

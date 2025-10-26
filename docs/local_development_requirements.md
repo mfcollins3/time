@@ -20,10 +20,10 @@ __Required Version__: 1.25.3
 
 [Go](https://go.dev) is a general purpose programming language for application development. Go was created and is maintained by [Google](https://google.com) and is used to build many popular software development tools including [Kubernetes](https://kubernetes.io) and [Docker](https://docker.com). Go is a popular programming language and has a large and growing ecosystem.
 
-- __Apple macOS or Linux__: [Go] can be installed using [Homebrew](software_requirements.md#homebrew). In a terminal, run:
+- __Apple macOS or Linux__: Go can be installed using [Homebrew](software_requirements.md#homebrew). In a terminal, run:
 
 ```shell
 brew install go@1.25.3
 ```
 
-- __Microsoft Windows__: [Go] can be installed on Microsoft Windows by downloading the required version from the [Go download page](https://go.dev/dl/).
+- __Microsoft Windows__: Go can be installed on Microsoft Windows by downloading the required version from the [Go download page](https://go.dev/dl/).
