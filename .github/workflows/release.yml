@@ -223,6 +223,7 @@ jobs:
     needs: extract-version
     if: needs.extract-version.outputs.is_release_branch == 'true'
     uses: ./.github/workflows/macos-builds.yml
+    secrets: inherit
 
   # Build Windows binaries
   build-windows:
