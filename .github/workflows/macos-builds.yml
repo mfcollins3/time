@@ -214,7 +214,6 @@ jobs:
           strip dist/macos-arm64/release/time
 
       - name: Import code signing certificate
-        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -237,7 +236,6 @@ jobs:
           security list-keychain -d user -s $KEYCHAIN_PATH
 
       - name: Code sign binaries
-        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
@@ -258,7 +256,6 @@ jobs:
           codesign --verify --verbose dist/macos-arm64/release/time
 
       - name: Notarize binaries
-        if: github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -296,7 +293,7 @@ jobs:
       # verified online when the binary is first run by Gatekeeper.
 
       - name: Clean up keychain
-        if: always() && github.event_name != 'pull_request' && vars.ENABLE_MACOS_SIGNING == 'true'
+        if: always()
         run: |
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           if [ -f "$KEYCHAIN_PATH" ]; then
