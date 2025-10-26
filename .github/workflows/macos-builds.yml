@@ -223,8 +223,16 @@ jobs:
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          # Import certificate from secrets
-          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode > $CERTIFICATE_PATH
+          # Import certificate from secrets (remove any whitespace/newlines first)
+          echo "$APPLE_CERTIFICATE_BASE64" | tr -d '\n\r' | base64 --decode > $CERTIFICATE_PATH
+          
+          # Verify the certificate file was created and has content
+          if [ ! -s "$CERTIFICATE_PATH" ]; then
+            echo "Error: Certificate file is empty or was not created"
+            exit 1
+          fi
+          
+          echo "Certificate file created successfully ($(wc -c < $CERTIFICATE_PATH) bytes)"
 
           # Create temporary keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
