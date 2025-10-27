@@ -212,7 +212,10 @@ jobs:
   build-linux:
     name: Build Linux Binaries
     needs: extract-version
-    if: needs.extract-version.outputs.is_release_branch == 'true'
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == false
     uses: ./.github/workflows/linux-builds.yml
     with:
       build-tags: ''
@@ -221,7 +224,10 @@ jobs:
   build-macos:
     name: Build macOS Binaries
     needs: extract-version
-    if: needs.extract-version.outputs.is_release_branch == 'true'
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == false
     uses: ./.github/workflows/macos-builds.yml
     secrets: inherit
 
@@ -229,7 +235,10 @@ jobs:
   build-windows:
     name: Build Windows Binaries
     needs: extract-version
-    if: needs.extract-version.outputs.is_release_branch == 'true'
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == false
     uses: ./.github/workflows/windows-builds.yml
 
   # Build and push Docker container
@@ -238,7 +247,10 @@ jobs:
     needs: 
       - extract-version
       - build-linux
-    if: needs.extract-version.outputs.is_release_branch == 'true'
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == false
     uses: ./.github/workflows/docker-container.yml
     with:
       skip-build: false
@@ -514,6 +526,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Fetch all tags from remote
+          git fetch --tags
           
           # Extract version components
           if [[ "${VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
