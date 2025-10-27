@@ -170,6 +170,9 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
 
 permissions:
@@ -574,16 +577,10 @@ jobs:
           fi
 
   # Build and push final Docker image with version tags
+  # This only runs when a version tag is pushed (which happens automatically after PR merge)
   publish-docker:
     name: Build and Push Docker Image with Version Tags
-    needs: 
-      - extract-version
-      - publish-release
-    if: |
-      needs.extract-version.outputs.is_release_branch == 'true' &&
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'main'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/docker-container.yml
     with:
       skip-build: false
