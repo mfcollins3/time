@@ -168,7 +168,7 @@
 package pomodoro
 
 func playAlarmSound() (chan bool, error) {
-	done := make(chan bool)
+	done := make(chan bool, 1)
 	done <- true
 	return done, nil
 }

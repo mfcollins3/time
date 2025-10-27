@@ -179,7 +179,7 @@ import (
 )
 
 func playAlarmSound() (chan bool, error) {
-	done := make(chan bool)
+	done := make(chan bool, 1)
 	if os.Getenv("TIME_NO_SOUND") == "1" {
 		done <- true
 		return done, nil
