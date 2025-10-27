@@ -46,7 +46,7 @@ The Time program will start the Pomodoro timer and begin the countdown from 25 m
 
 ![The Time program running and showing the Pomodoro timer counting down from 25 minutes with a progress bar moving from left to right](assets/pomodoro_timer.png)
 
-> :exclamation When running Time from a container, no alarm is played and there is no desktop notification. These features are not available when running from a container.
+> :exclamation: When running Time from a container, no alarm is played and there is no desktop notification. These features are not available when running from a container.
 
 The Pomodoro information is captured in a local database and will be utilized in future releases as we add new features such as Activity Inventory to the Time application.
 
