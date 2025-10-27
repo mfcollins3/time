@@ -515,11 +515,45 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create and push tag if it doesn't exist
+          # Extract version components
+          if [[ "${VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+          else
+            echo "❌ Invalid version format: ${VERSION}"
+            exit 1
+          fi
+          
+          # Create and push full version tag (v<major>.<minor>.<patch>)
           if ! git rev-parse "v${VERSION}" >/dev/null 2>&1; then
             git tag -a "v${VERSION}" -m "Release v${VERSION}"
             git push origin "v${VERSION}"
             echo "✅ Created and pushed tag v${VERSION}"
           else
             echo "ℹ️ Tag v${VERSION} already exists"
+          fi
+          
+          # Create/update major.minor tag (v<major>.<minor>)
+          MINOR_TAG="v${MAJOR}.${MINOR}"
+          if git rev-parse "${MINOR_TAG}" >/dev/null 2>&1; then
+            echo "ℹ️ Updating existing tag ${MINOR_TAG}"
+            git tag -fa "${MINOR_TAG}" -m "Release v${VERSION}"
+            git push origin "${MINOR_TAG}" --force
+          else
+            git tag -a "${MINOR_TAG}" -m "Release v${VERSION}"
+            git push origin "${MINOR_TAG}"
+            echo "✅ Created and pushed tag ${MINOR_TAG}"
+          fi
+          
+          # Create/update major tag (v<major>)
+          MAJOR_TAG="v${MAJOR}"
+          if git rev-parse "${MAJOR_TAG}" >/dev/null 2>&1; then
+            echo "ℹ️ Updating existing tag ${MAJOR_TAG}"
+            git tag -fa "${MAJOR_TAG}" -m "Release v${VERSION}"
+            git push origin "${MAJOR_TAG}" --force
+          else
+            git tag -a "${MAJOR_TAG}" -m "Release v${VERSION}"
+            git push origin "${MAJOR_TAG}"
+            echo "✅ Created and pushed tag ${MAJOR_TAG}"
           fi
