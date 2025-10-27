@@ -579,32 +579,12 @@ jobs:
     needs: 
       - extract-version
       - publish-release
-    runs-on: ubuntu-24.04
     if: |
       needs.extract-version.outputs.is_release_branch == 'true' &&
       github.event_name == 'pull_request' &&
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'main'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Build and push Docker image
-        uses: ./.github/workflows/docker-container.yml
-        with:
-          skip-build: false
-        secrets: inherit
-
-      - name: Output Docker image tags
-        env:
-          VERSION: ${{ needs.extract-version.outputs.version }}
-        run: |
-          echo "✅ Docker image published with the following tags:"
-          echo "  - ghcr.io/mfcollins3/time:${VERSION}"
-          echo "  - ghcr.io/mfcollins3/time:latest"
-          echo ""
-          echo "Pull the image with:"
-          echo "  docker pull ghcr.io/mfcollins3/time:${VERSION}"
+    uses: ./.github/workflows/docker-container.yml
+    with:
+      skip-build: false
+    secrets: inherit
