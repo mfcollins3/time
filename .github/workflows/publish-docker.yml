@@ -225,6 +225,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine tag reference
+        id: tag-ref
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ref=refs/tags/${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -239,6 +248,8 @@ jobs:
             org.opencontainers.image.title=Time
             org.opencontainers.image.description=Pomodoro Technique time management application
             org.opencontainers.image.vendor=mfcollins3
+        env:
+          DOCKER_METADATA_INPUTS_CONTEXT_REF: ${{ steps.tag-ref.outputs.ref }}
 
       - name: Build and push AMD64 image
         id: build-amd64
