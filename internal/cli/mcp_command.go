@@ -23,7 +23,7 @@
 //   plugins, connectors, or tools that interact with the Software through
 //   documented interfaces, data formats, or APIs, but which are not a
 //   substantial copy of the Software itself.
-// - "Commercial Release" means a future release of the Software made
+// - "Commercial Release" means a future releaase of the Software made
 //   available by the copyright holder under a different license, including a
 //   commercial license.
 //
@@ -109,7 +109,7 @@
 // The Software is licensed, not sold. All rights, title, and interest in and
 // to the Software (including all intellectual property rights) are and shall
 // remain with the copyright holder and its licensors. Except for the limited
-// rights expressly granted herein, no other rights are granted by implication,
+// rights expressly granted herin, no other rights are granted by implciation,
 // estoppel, or otherwise.
 //
 // 7. Warranty Disclaimer
@@ -163,94 +163,18 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package cli
 
 import (
-	"context"
-	_ "embed"
-	"errors"
-	"fmt"
-	"os"
-	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
-	"gorm.io/gorm"
-	appcontext "michaelfcollins3.dev/projects/time/internal/context"
-	"michaelfcollins3.dev/projects/time/internal/database"
+	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver"
 )
 
-//go:embed alarm.mp3
-var alarmSound []byte
-
-func Start(ctx context.Context) error {
-	startTime := time.Now()
-	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
-	p := tea.NewProgram(
-		newModel(ctx, startTime),
-		tea.WithContext(pomodoroCtx),
-	)
-	m, err := p.Run()
-	cancel()
-	completed := errors.Is(err, context.DeadlineExceeded)
-	if err != nil && !completed {
-		return err
-	}
-
-	model := m.(model)
-	if model.err != nil {
-		return model.err
-	}
-
-	if completed {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
-		defer timeoutCancel()
-
-		done, err := playAlarmSound()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
-		}
-
-		err = showDesktopNotification()
-		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"Failed to show desktop notification: %v\n",
-				err,
-			)
-		}
-
-		fmt.Println(model.pomodoroID.String())
-
-		err = completePomodoro(ctx, model)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-		}
-	}
-
-	return nil
-}
-
-func completePomodoro(ctx context.Context, model model) error {
-	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
-	rows, err := gorm.G[database.Pomodoro](db).
-		Where("id = ?", model.pomodoroID).
-		Update(dbCtx, "end_time", model.startTime.Add(pomodoroDuration))
-	dbCancel()
-	if err != nil {
-		return fmt.Errorf("failed to update pomodoro end time: %w", err)
-	}
-
-	if rows == 0 {
-		return fmt.Errorf(
-			"failed to update pomodoro end time: no rows affected",
-		)
-	}
-
-	return nil
+var mcpCommand = &cobra.Command{
+	Use:   "mcp",
+	Short: "Starts the Time MCP server for AI integration.",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return mcpserver.Start(cmd.Context())
+	},
 }

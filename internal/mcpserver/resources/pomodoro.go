@@ -23,7 +23,7 @@
 //   plugins, connectors, or tools that interact with the Software through
 //   documented interfaces, data formats, or APIs, but which are not a
 //   substantial copy of the Software itself.
-// - "Commercial Release" means a future release of the Software made
+// - "Commercial Release" means a future releaase of the Software made
 //   available by the copyright holder under a different license, including a
 //   commercial license.
 //
@@ -109,7 +109,7 @@
 // The Software is licensed, not sold. All rights, title, and interest in and
 // to the Software (including all intellectual property rights) are and shall
 // remain with the copyright holder and its licensors. Except for the limited
-// rights expressly granted herein, no other rights are granted by implication,
+// rights expressly granted herin, no other rights are granted by implciation,
 // estoppel, or otherwise.
 //
 // 7. Warranty Disclaimer
@@ -163,94 +163,92 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package resources
 
 import (
 	"context"
-	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"net/url"
+	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gorm.io/gorm"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
 )
 
-//go:embed alarm.mp3
-var alarmSound []byte
-
-func Start(ctx context.Context) error {
-	startTime := time.Now()
-	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
-	p := tea.NewProgram(
-		newModel(ctx, startTime),
-		tea.WithContext(pomodoroCtx),
-	)
-	m, err := p.Run()
-	cancel()
-	completed := errors.Is(err, context.DeadlineExceeded)
-	if err != nil && !completed {
-		return err
-	}
-
-	model := m.(model)
-	if model.err != nil {
-		return model.err
-	}
-
-	if completed {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
-		defer timeoutCancel()
-
-		done, err := playAlarmSound()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
-		}
-
-		err = showDesktopNotification()
-		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"Failed to show desktop notification: %v\n",
-				err,
-			)
-		}
-
-		fmt.Println(model.pomodoroID.String())
-
-		err = completePomodoro(ctx, model)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-		}
-	}
-
-	return nil
+type pomodoro struct {
+	ID        string    `json:"id" jsonschema:"The unique identifier for the Pomodoro"`
+	StartTime time.Time `json:"startTime" jsonschema:"The date and time that the Pomodoro was started"`
+	EndTime   time.Time `json:"endTime,omitzero" jsonschema:"The date and time that the Pomodoro ended. If the Pomodoro is still in progress, this field is omitted."`
 }
 
-func completePomodoro(ctx context.Context, model model) error {
+func PomodoroResourceHandler(
+	ctx context.Context,
+	req *mcp.ReadResourceRequest,
+) (*mcp.ReadResourceResult, error) {
 	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
-	rows, err := gorm.G[database.Pomodoro](db).
-		Where("id = ?", model.pomodoroID).
-		Update(dbCtx, "end_time", model.startTime.Add(pomodoroDuration))
-	dbCancel()
+
+	// Parse the URI to extract user and id
+	// URI format: pomodoro://{user}/{id}
+	parsedURI, err := url.Parse(req.Params.URI)
 	if err != nil {
-		return fmt.Errorf("failed to update pomodoro end time: %w", err)
+		return nil, fmt.Errorf("invalid URI format: %w", err)
 	}
 
-	if rows == 0 {
-		return fmt.Errorf(
-			"failed to update pomodoro end time: no rows affected",
-		)
+	// Verify the scheme is "pomodoro"
+	if parsedURI.Scheme != "pomodoro" {
+		return nil, fmt.Errorf("invalid URI scheme: expected 'pomodoro', got '%s'", parsedURI.Scheme)
 	}
 
-	return nil
+	// Extract user from the host part
+	user := parsedURI.Host
+	if user == "" {
+		return nil, fmt.Errorf("missing user in URI")
+	}
+
+	// Extract id from the path (remove leading slash)
+	pathParts := strings.Split(strings.TrimPrefix(parsedURI.Path, "/"), "/")
+	if len(pathParts) == 0 || pathParts[0] == "" {
+		return nil, fmt.Errorf("missing id in URI")
+	}
+	id := pathParts[0]
+
+	p, err := gorm.G[database.Pomodoro](db).
+		Where("id = ?", id).
+		First(ctx)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, mcp.ResourceNotFoundError(req.Params.URI)
+		}
+
+		return nil, fmt.Errorf("failed to retrieve pomodoro: %w", err)
+	}
+
+	resource := pomodoro{
+		ID:        p.ID.String(),
+		StartTime: p.StartTime,
+	}
+	if p.EndTime.Valid {
+		resource.EndTime = p.EndTime.Time
+	}
+
+	bytes, err := json.Marshal(resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal pomodoro resource: %w", err)
+	}
+
+	result := &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{
+			{
+				URI:      req.Params.URI,
+				MIMEType: "application/json",
+				Text:     string(bytes),
+			},
+		},
+	}
+	return result, nil
 }

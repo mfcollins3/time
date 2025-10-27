@@ -23,7 +23,7 @@
 //   plugins, connectors, or tools that interact with the Software through
 //   documented interfaces, data formats, or APIs, but which are not a
 //   substantial copy of the Software itself.
-// - "Commercial Release" means a future release of the Software made
+// - "Commercial Release" means a future releaase of the Software made
 //   available by the copyright holder under a different license, including a
 //   commercial license.
 //
@@ -109,7 +109,7 @@
 // The Software is licensed, not sold. All rights, title, and interest in and
 // to the Software (including all intellectual property rights) are and shall
 // remain with the copyright holder and its licensors. Except for the limited
-// rights expressly granted herein, no other rights are granted by implication,
+// rights expressly granted herin, no other rights are granted by implciation,
 // estoppel, or otherwise.
 //
 // 7. Warranty Disclaimer
@@ -163,93 +163,50 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package mcpserver
 
 import (
 	"context"
-	_ "embed"
-	"errors"
 	"fmt"
-	"os"
-	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"gorm.io/gorm"
-	appcontext "michaelfcollins3.dev/projects/time/internal/context"
-	"michaelfcollins3.dev/projects/time/internal/database"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver/resources"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver/tools"
 )
 
-//go:embed alarm.mp3
-var alarmSound []byte
-
 func Start(ctx context.Context) error {
-	startTime := time.Now()
-	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
-	p := tea.NewProgram(
-		newModel(ctx, startTime),
-		tea.WithContext(pomodoroCtx),
+	server := mcp.NewServer(
+		&mcp.Implementation{
+			Name:    "time",
+			Title:   "Time",
+			Version: "0.1.0",
+		},
+		nil,
 	)
-	m, err := p.Run()
-	cancel()
-	completed := errors.Is(err, context.DeadlineExceeded)
-	if err != nil && !completed {
-		return err
-	}
 
-	model := m.(model)
-	if model.err != nil {
-		return model.err
-	}
+	server.AddResourceTemplate(
+		&mcp.ResourceTemplate{
+			Description: "A Pomodoro represents a block of time in which a user performed focus work on an activity. A typical Pomodoro is 25 minutes in length. This resource type can return Pomodoro information for a specified user given the unique identifier of the Pomodoro.",
+			MIMEType:    "application/json",
+			Name:        "pomodoro",
+			Title:       "Pomodoro",
+			URITemplate: "pomodoro://{user}/{id}",
+		},
+		resources.PomodoroResourceHandler,
+	)
 
-	if completed {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
-		defer timeoutCancel()
+	mcp.AddTool(
+		server,
+		&mcp.Tool{
+			Description: "Queries and returns a list of Pomodoros that were started within a specified time range.",
+			Name:        "list_pomodoros_in_time_range",
+			Title:       "List Pomodoros in Time Range",
+		},
+		tools.ListPomodorosInTimeRangeHandler,
+	)
 
-		done, err := playAlarmSound()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
-		}
-
-		err = showDesktopNotification()
-		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"Failed to show desktop notification: %v\n",
-				err,
-			)
-		}
-
-		fmt.Println(model.pomodoroID.String())
-
-		err = completePomodoro(ctx, model)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-		}
-	}
-
-	return nil
-}
-
-func completePomodoro(ctx context.Context, model model) error {
-	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
-	rows, err := gorm.G[database.Pomodoro](db).
-		Where("id = ?", model.pomodoroID).
-		Update(dbCtx, "end_time", model.startTime.Add(pomodoroDuration))
-	dbCancel()
-	if err != nil {
-		return fmt.Errorf("failed to update pomodoro end time: %w", err)
-	}
-
-	if rows == 0 {
-		return fmt.Errorf(
-			"failed to update pomodoro end time: no rows affected",
-		)
+	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
+		return fmt.Errorf("the MCP server failed: %w", err)
 	}
 
 	return nil
