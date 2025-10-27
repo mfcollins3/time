@@ -241,9 +241,9 @@ jobs:
       github.event.pull_request.merged == false
     uses: ./.github/workflows/windows-builds.yml
 
-  # Build and push Docker container
-  build-docker:
-    name: Build Docker Container
+  # Build and push Docker container for PR testing
+  build-docker-pr:
+    name: Build Docker Container (PR)
     needs: 
       - extract-version
       - build-linux
@@ -264,7 +264,7 @@ jobs:
       - build-linux
       - build-macos
       - build-windows
-      - build-docker
+      - build-docker-pr
     runs-on: ubuntu-24.04
     if: |
       needs.extract-version.outputs.is_release_branch == 'true' &&
@@ -572,3 +572,39 @@ jobs:
             git push origin "${MAJOR_TAG}"
             echo "✅ Created and pushed tag ${MAJOR_TAG}"
           fi
+
+  # Build and push final Docker image with version tags
+  publish-docker:
+    name: Build and Push Docker Image with Version Tags
+    needs: 
+      - extract-version
+      - publish-release
+    runs-on: ubuntu-24.04
+    if: |
+      needs.extract-version.outputs.is_release_branch == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Build and push Docker image
+        uses: ./.github/workflows/docker-container.yml
+        with:
+          skip-build: false
+        secrets: inherit
+
+      - name: Output Docker image tags
+        env:
+          VERSION: ${{ needs.extract-version.outputs.version }}
+        run: |
+          echo "✅ Docker image published with the following tags:"
+          echo "  - ghcr.io/mfcollins3/time:${VERSION}"
+          echo "  - ghcr.io/mfcollins3/time:latest"
+          echo ""
+          echo "Pull the image with:"
+          echo "  docker pull ghcr.io/mfcollins3/time:${VERSION}"
