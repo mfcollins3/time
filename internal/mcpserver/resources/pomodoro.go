@@ -163,41 +163,92 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package dbid
+package resources
 
 import (
-	"database/sql/driver"
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
+	"strings"
+	"time"
 
-	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"gorm.io/gorm"
+	appcontext "michaelfcollins3.dev/projects/time/internal/context"
+	"michaelfcollins3.dev/projects/time/internal/database"
 )
 
-type ID uuid.UUID
+type pomodoro struct {
+	ID        string    `json:"id" jsonschema:"The unique identifier for the Pomodoro"`
+	StartTime time.Time `json:"startTime" jsonschema:"The date and time that the Pomodoro was started"`
+	EndTime   time.Time `json:"endTime,omitzero" jsonschema:"The date and time that the Pomodoro ended. If the Pomodoro is still in progress, this field is omitted."`
+}
 
-func NewID() ID {
-	id, err := uuid.NewV7()
+func PomodoroResourceHandler(
+	ctx context.Context,
+	req *mcp.ReadResourceRequest,
+) (*mcp.ReadResourceResult, error) {
+	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
+
+	// Parse the URI to extract user and id
+	// URI format: pomodoro://{user}/{id}
+	parsedURI, err := url.Parse(req.Params.URI)
 	if err != nil {
-		panic(fmt.Errorf("failed to generate UUIDv7: %w", err))
+		return nil, fmt.Errorf("invalid URI format: %w", err)
 	}
 
-	return ID(id)
-}
-
-func (id *ID) Scan(src interface{}) error {
-	u := uuid.UUID{}
-	err := u.Scan(src)
-	if err != nil {
-		return err
+	// Verify the scheme is "pomodoro"
+	if parsedURI.Scheme != "pomodoro" {
+		return nil, fmt.Errorf("invalid URI scheme: expected 'pomodoro', got '%s'", parsedURI.Scheme)
 	}
 
-	*id = ID(u)
-	return nil
-}
+	// Extract user from the host part
+	user := parsedURI.Host
+	if user == "" {
+		return nil, fmt.Errorf("missing user in URI")
+	}
 
-func (id ID) Value() (driver.Value, error) {
-	return uuid.UUID(id).Value()
-}
+	// Extract id from the path (remove leading slash)
+	pathParts := strings.Split(strings.TrimPrefix(parsedURI.Path, "/"), "/")
+	if len(pathParts) == 0 || pathParts[0] == "" {
+		return nil, fmt.Errorf("missing id in URI")
+	}
+	id := pathParts[0]
 
-func (id ID) String() string {
-	return uuid.UUID(id).String()
+	p, err := gorm.G[database.Pomodoro](db).
+		Where("id = ?", id).
+		First(ctx)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, mcp.ResourceNotFoundError(req.Params.URI)
+		}
+
+		return nil, fmt.Errorf("failed to retrieve pomodoro: %w", err)
+	}
+
+	resource := pomodoro{
+		ID:        p.ID.String(),
+		StartTime: p.StartTime,
+	}
+	if p.EndTime.Valid {
+		resource.EndTime = p.EndTime.Time
+	}
+
+	bytes, err := json.Marshal(resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal pomodoro resource: %w", err)
+	}
+
+	result := &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{
+			{
+				URI:      req.Params.URI,
+				MIMEType: "application/json",
+				Text:     string(bytes),
+			},
+		},
+	}
+	return result, nil
 }

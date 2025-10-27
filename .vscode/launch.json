@@ -7,6 +7,13 @@
         {
             "name": "Attach to Time",
             "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": 0
+        },
+        {
+            "name": "Debug Time",
+            "type": "go",
             "debugAdapter": "dlv-dap",
             "request": "attach",
             "mode": "remote",

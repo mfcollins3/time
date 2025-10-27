@@ -163,41 +163,51 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package dbid
+package mcpserver
 
 import (
-	"database/sql/driver"
+	"context"
 	"fmt"
 
-	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver/resources"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver/tools"
 )
 
-type ID uuid.UUID
+func Start(ctx context.Context) error {
+	server := mcp.NewServer(
+		&mcp.Implementation{
+			Name:    "time",
+			Title:   "Time",
+			Version: "0.1.0",
+		},
+		nil,
+	)
 
-func NewID() ID {
-	id, err := uuid.NewV7()
-	if err != nil {
-		panic(fmt.Errorf("failed to generate UUIDv7: %w", err))
+	server.AddResourceTemplate(
+		&mcp.ResourceTemplate{
+			Description: "A Pomodoro represents a block of time in which a user performed focus work on an activity. A typical Pomodoro is 25 minutes in length. This resource type can return Pomodoro information for a specified user given the unique identifier of the Pomodoro.",
+			MIMEType:    "application/json",
+			Name:        "pomodoro",
+			Title:       "Pomodoro",
+			URITemplate: "pomodoro://{user}/{id}",
+		},
+		resources.PomodoroResourceHandler,
+	)
+
+	mcp.AddTool(
+		server,
+		&mcp.Tool{
+			Description: "Queries and returns a list of Pomodoros that were started within a specified time range.",
+			Name:        "list_pomodoros_in_time_range",
+			Title:       "List Pomodoros in Time Range",
+		},
+		tools.ListPomodorosInTimeRangeHandler,
+	)
+
+	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
+		return fmt.Errorf("the MCP server failed: %w", err)
 	}
 
-	return ID(id)
-}
-
-func (id *ID) Scan(src interface{}) error {
-	u := uuid.UUID{}
-	err := u.Scan(src)
-	if err != nil {
-		return err
-	}
-
-	*id = ID(u)
 	return nil
-}
-
-func (id ID) Value() (driver.Value, error) {
-	return uuid.UUID(id).Value()
-}
-
-func (id ID) String() string {
-	return uuid.UUID(id).String()
 }

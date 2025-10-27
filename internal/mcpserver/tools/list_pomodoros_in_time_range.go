@@ -163,41 +163,46 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package dbid
+package tools
 
 import (
-	"database/sql/driver"
+	"context"
 	"fmt"
+	"time"
 
-	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"gorm.io/gorm"
+	appcontext "michaelfcollins3.dev/projects/time/internal/context"
+	"michaelfcollins3.dev/projects/time/internal/database"
 )
 
-type ID uuid.UUID
+type listPomodorosInTimeRangeRequest struct {
+	StartTime time.Time `json:"startTime" jsonschema:"the start of the time range to list pomodoros for"`
+	EndTime   time.Time `json:"endTime" jsonschema:"the end of the time range to list pomodoros for"`
+}
 
-func NewID() ID {
-	id, err := uuid.NewV7()
+func ListPomodorosInTimeRangeHandler(
+	ctx context.Context,
+	req *mcp.CallToolRequest,
+	args listPomodorosInTimeRangeRequest,
+) (*mcp.CallToolResult, any, error) {
+	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
+
+	pomodoros, err := gorm.G[database.Pomodoro](db).Find(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to generate UUIDv7: %w", err))
+		return nil, nil, err
 	}
 
-	return ID(id)
-}
-
-func (id *ID) Scan(src interface{}) error {
-	u := uuid.UUID{}
-	err := u.Scan(src)
-	if err != nil {
-		return err
+	content := []mcp.Content{}
+	for _, p := range pomodoros {
+		link := &mcp.ResourceLink{
+			URI:      fmt.Sprintf("pomodoro://me/%s", p.ID.String()),
+			Name:     p.ID.String(),
+			MIMEType: "application/json",
+		}
+		content = append(content, link)
 	}
-
-	*id = ID(u)
-	return nil
-}
-
-func (id ID) Value() (driver.Value, error) {
-	return uuid.UUID(id).Value()
-}
-
-func (id ID) String() string {
-	return uuid.UUID(id).String()
+	return &mcp.CallToolResult{
+		Content: content,
+	}, nil, nil
 }

@@ -219,7 +219,7 @@ func Start(ctx context.Context) error {
 			)
 		}
 
-		fmt.Println("Pomodoro completed! Take a break!")
+		fmt.Println(model.pomodoroID.String())
 
 		err = completePomodoro(ctx, model)
 		if err != nil {
