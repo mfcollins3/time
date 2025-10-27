@@ -170,9 +170,6 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches:
       - main
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
 
 permissions:
@@ -526,9 +523,13 @@ jobs:
       - name: Create Git tag
         env:
           VERSION: ${{ needs.extract-version.outputs.version }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Configure git to use the PAT for authentication
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
           
           # Fetch all tags from remote
           git fetch --tags
@@ -575,13 +576,6 @@ jobs:
             git push origin "${MAJOR_TAG}"
             echo "✅ Created and pushed tag ${MAJOR_TAG}"
           fi
-
-  # Build and push final Docker image with version tags
-  # This only runs when a version tag is pushed (which happens automatically after PR merge)
-  publish-docker:
-    name: Build and Push Docker Image with Version Tags
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/docker-container.yml
-    with:
-      skip-build: false
-    secrets: inherit
+          
+          echo ""
+          echo "ℹ️ Tag push will trigger the publish-docker.yml workflow to build and publish Docker images"
