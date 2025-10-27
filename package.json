@@ -1,7 +1,7 @@
 {
   "name": "@mfcollins3/time",
   "version": "0.0.1",
-  "description": "Naked Time is a productivity application that helps users to manage their time effectively",
+  "description": "Time is a productivity application that helps users to manage their time effectively",
   "keywords": [
     "analysis",
     "management",
@@ -9,7 +9,7 @@
     "productivity",
     "time"
   ],
-  "homepage": "https://www.nakedtime.app",
+  "homepage": "https://github.com/mfcollins3/time",
   "bugs": {
     "url": "https://github.com/mfcollins3/time/issues",
     "email": "mfcollins3@me.com"

@@ -33,3 +33,21 @@ cd time
 ```
 
 Once the `setup` script has completed execution successfully, you can build and run the Time product locally in your development environment or machine.
+
+## Using Time
+
+In the initial release, Time only supports performing a Pomodoro. A Pomodoro is a 25 minute block where you are setting aside time to focus on completing or progressing an activity that has been assigned to you and that you need to complete. After each Pomodoro, you should take a 5 minute break (not implemented yet; coming soon). Time will display a progress bar and the time remaining in the Pomodoro.
+
+To begin a Pomodoro, open a terminal and navigate to where you installed the `time` program (or run it from anywhere if it's in your `PATH`), and run:
+
+    time
+
+The Time program will start the Pomodoro timer and begin the countdown from 25 minutes. A progress bar will be shown in the terminal as the time counts down. The progress bar will turn to yellow after about 20 minutes (5 minutes remaining), and will turn red around 23:45 to indicate that the Pomodoro is almost complete. When the Pomodoro completes, an alarm should sound and you will also see a desktop notification.
+
+![The Time program running and showing the Pomodoro timer counting down from 25 minutes with a progress bar moving from left to right](assets/pomodoro_timer.png)
+
+> :exclamation: When running Time from a container, no alarm is played and there is no desktop notification. These features are not available when running from a container.
+
+The Pomodoro information is captured in a local database and will be utilized in future releases as we add new features such as Activity Inventory to the Time application.
+
+When you are eady to start your next Pomodoro, just run `time` again in the terminal.
