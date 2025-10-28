@@ -163,14 +163,54 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package cli
+package mcp
 
-import "michaelfcollins3.dev/projects/time/internal/cli/mcp"
+import (
+	"context"
+	"log"
+	"net"
+	"net/http"
+	"time"
 
-func init() {
-	rootCommand.AddCommand(mcpCommand)
+	mcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/spf13/cobra"
+	"golang.ngrok.com/ngrok/v2"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver"
+)
 
-	mcpCommand.AddCommand(mcp.STDIOMCPServerCommand)
-	mcpCommand.AddCommand(mcp.HTTPMCPServerCommand)
-	mcpCommand.AddCommand(mcp.NgrokMCPServerCommand)
+var NgrokMCPServerCommand = &cobra.Command{
+	Use:   "ngrok",
+	Short: "Starts an MCP server that communicates over HTTP with clients",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		server := mcpserver.NewServer()
+		handler := mcp.NewStreamableHTTPHandler(
+			func(r *http.Request) *mcp.Server {
+				return server
+			},
+			&mcp.StreamableHTTPOptions{
+				JSONResponse: true,
+			},
+		)
+
+		mux := http.NewServeMux()
+		mux.Handle("/mcp", handler)
+
+		ln, err := ngrok.Listen(cmd.Context())
+		if err != nil {
+			return err
+		}
+
+		log.Println("ngrok MCP server listening at:", ln.URL())
+		httpServer := &http.Server{
+			Handler:      mux,
+			ReadTimeout:  60 * time.Second,
+			WriteTimeout: 60 * time.Second,
+			IdleTimeout:  60 * time.Second,
+			BaseContext: func(_ net.Listener) context.Context {
+				return cmd.Context()
+			},
+		}
+		return httpServer.Serve(ln)
+	},
 }
