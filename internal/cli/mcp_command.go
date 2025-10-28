@@ -167,7 +167,6 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"michaelfcollins3.dev/projects/time/internal/mcpserver"
 )
 
 var mcpCommand = &cobra.Command{
@@ -175,6 +174,6 @@ var mcpCommand = &cobra.Command{
 	Short: "Starts the Time MCP server for AI integration.",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return mcpserver.Start(cmd.Context())
+		return cmd.Help()
 	},
 }
