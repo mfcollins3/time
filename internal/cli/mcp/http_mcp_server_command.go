@@ -163,20 +163,47 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package mcpserver
+package mcp
 
 import (
 	"context"
-	"fmt"
+	"net"
+	"net/http"
+	"time"
 
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	mcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver"
 )
 
-func Start(ctx context.Context, transport mcp.Transport) error {
-	server := NewServer()
-	if err := server.Run(ctx, transport); err != nil {
-		return fmt.Errorf("the MCP server failed: %w", err)
-	}
+var HTTPMCPServerCommand = &cobra.Command{
+	Use:   "http",
+	Short: "Starts an MCP server that communicates over HTTP with clients",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		server := mcpserver.NewServer()
+		handler := mcp.NewStreamableHTTPHandler(
+			func(r *http.Request) *mcp.Server {
+				return server
+			},
+			&mcp.StreamableHTTPOptions{
+				JSONResponse: true,
+			},
+		)
 
-	return nil
+		mux := http.NewServeMux()
+		mux.Handle("/mcp", handler)
+
+		httpServer := &http.Server{
+			Addr:         ":8080",
+			Handler:      mux,
+			ReadTimeout:  60 * time.Second,
+			WriteTimeout: 60 * time.Second,
+			IdleTimeout:  60 * time.Second,
+			BaseContext: func(_ net.Listener) context.Context {
+				return cmd.Context()
+			},
+		}
+		return httpServer.ListenAndServe()
+	},
 }

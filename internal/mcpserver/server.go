@@ -166,17 +166,41 @@
 package mcpserver
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver/resources"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver/tools"
 )
 
-func Start(ctx context.Context, transport mcp.Transport) error {
-	server := NewServer()
-	if err := server.Run(ctx, transport); err != nil {
-		return fmt.Errorf("the MCP server failed: %w", err)
-	}
+func NewServer() *mcp.Server {
+	server := mcp.NewServer(
+		&mcp.Implementation{
+			Name:    "time",
+			Title:   "Time",
+			Version: "0.1.0",
+		},
+		nil,
+	)
 
-	return nil
+	server.AddResourceTemplate(
+		&mcp.ResourceTemplate{
+			Description: "A Pomodoro represents a block of time in which a user performed focus work on an activity. A typical Pomodoro is 25 minutes in length. This resource type can return Pomodoro information for a specified user given the unique identifier of the Pomodoro.",
+			MIMEType:    "application/json",
+			Name:        "pomodoro",
+			Title:       "Pomodoro",
+			URITemplate: "pomodoro://{user}/{id}",
+		},
+		resources.PomodoroResourceHandler,
+	)
+
+	mcp.AddTool(
+		server,
+		&mcp.Tool{
+			Description: "Queries and returns a list of Pomodoros that were started within a specified time range.",
+			Name:        "list_pomodoros_in_time_range",
+			Title:       "List Pomodoros in Time Range",
+		},
+		tools.ListPomodorosInTimeRangeHandler,
+	)
+
+	return server
 }

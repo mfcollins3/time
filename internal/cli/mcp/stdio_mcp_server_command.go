@@ -163,20 +163,19 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package mcpserver
+package mcp
 
 import (
-	"context"
-	"fmt"
-
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	mcp "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/mcpserver"
 )
 
-func Start(ctx context.Context, transport mcp.Transport) error {
-	server := NewServer()
-	if err := server.Run(ctx, transport); err != nil {
-		return fmt.Errorf("the MCP server failed: %w", err)
-	}
-
-	return nil
+var STDIOMCPServerCommand = &cobra.Command{
+	Use:   "stdio",
+	Short: "Starts an MCP server that communicates with the client over STDIO",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return mcpserver.Start(cmd.Context(), &mcp.StdioTransport{})
+	},
 }
