@@ -168,6 +168,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -177,8 +178,8 @@ import (
 )
 
 type listPomodorosInTimeRangeRequest struct {
-	StartTime time.Time `json:"startTime" jsonschema:"the start of the time range to list pomodoros for"`
-	EndTime   time.Time `json:"endTime" jsonschema:"the end of the time range to list pomodoros for"`
+	StartTime time.Time `json:"startTime" jsonschema:"The start of the time range to list pomodoros for. The start time must be in ISO 8601 format."`
+	EndTime   time.Time `json:"endTime" jsonschema:"The end of the time range to list pomodoros for. The end time must be in ISO 8601 format."`
 }
 
 func ListPomodorosInTimeRangeHandler(
@@ -186,12 +187,22 @@ func ListPomodorosInTimeRangeHandler(
 	req *mcp.CallToolRequest,
 	args listPomodorosInTimeRangeRequest,
 ) (*mcp.CallToolResult, any, error) {
+	log := slog.New(mcp.NewLoggingHandler(req.Session, nil))
+	log.InfoContext(
+		ctx,
+		"Searching for pomodoros",
+		slog.Time("startTime", args.StartTime),
+		slog.Time("endTime", args.EndTime),
+	)
+
 	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
 
 	pomodoros, err := gorm.G[database.Pomodoro](db).Find(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	log.InfoContext(ctx, "Found pomodoros", slog.Int("count", len(pomodoros)))
 
 	content := []mcp.Content{}
 	for _, p := range pomodoros {

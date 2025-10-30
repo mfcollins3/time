@@ -167,8 +167,12 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	mcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -181,6 +185,13 @@ var HTTPMCPServerCommand = &cobra.Command{
 	Short: "Starts an MCP server that communicates over HTTP with clients",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		serverCtx, cancel := signal.NotifyContext(
+			cmd.Context(),
+			os.Interrupt,
+			syscall.SIGTERM,
+		)
+		defer cancel()
+
 		server := mcpserver.NewServer()
 		handler := mcp.NewStreamableHTTPHandler(
 			func(r *http.Request) *mcp.Server {
@@ -201,9 +212,30 @@ var HTTPMCPServerCommand = &cobra.Command{
 			WriteTimeout: 60 * time.Second,
 			IdleTimeout:  60 * time.Second,
 			BaseContext: func(_ net.Listener) context.Context {
-				return cmd.Context()
+				return serverCtx
 			},
 		}
-		return httpServer.ListenAndServe()
+
+		context.AfterFunc(serverCtx, func() {
+			timeoutCtx, timeoutCancel := context.WithTimeout(
+				context.Background(),
+				30*time.Second,
+			)
+			defer timeoutCancel()
+
+			if err := httpServer.Shutdown(timeoutCtx); err != nil {
+				os.Exit(0)
+			}
+		})
+
+		if err := httpServer.ListenAndServe(); err != nil {
+			if errors.Is(err, http.ErrServerClosed) {
+				return nil
+			}
+
+			return err
+		}
+
+		return nil
 	},
 }
