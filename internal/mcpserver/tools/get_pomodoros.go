@@ -167,6 +167,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -177,42 +178,53 @@ import (
 	"michaelfcollins3.dev/projects/time/internal/database"
 )
 
-type listPomodorosInTimeRangeRequest struct {
-	StartTime time.Time `json:"startTime" jsonschema:"The start of the time range to list pomodoros for. The start time must be in ISO 8601 format."`
-	EndTime   time.Time `json:"endTime" jsonschema:"The end of the time range to list pomodoros for. The end time must be in ISO 8601 format."`
+type pomodoro struct {
+	ID        string    `json:"id" jsonschema:"the identifier that uniquely identifies the pomodoro"`
+	StartTime time.Time `json:"startTime" jsonschema:"the date and time that the pomodoro started"`
+	EndTime   time.Time `json:"endTime,omitzero" jsonschema:"the date and time that the pomodoro ended. This value may be omitted if the pomodoro is active or did not finish."`
 }
 
-func ListPomodorosInTimeRangeHandler(
+func GetPomodoros(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
-	args listPomodorosInTimeRangeRequest,
+	args any,
 ) (*mcp.CallToolResult, any, error) {
 	log := slog.New(mcp.NewLoggingHandler(req.Session, nil))
-	log.InfoContext(
-		ctx,
-		"Searching for pomodoros",
-		slog.Time("startTime", args.StartTime),
-		slog.Time("endTime", args.EndTime),
-	)
+	log.DebugContext(ctx, "Querying pomodoros")
 
 	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-
 	pomodoros, err := gorm.G[database.Pomodoro](db).Find(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("unable to query pomodoros: %w", err)
 	}
 
-	log.InfoContext(ctx, "Found pomodoros", slog.Int("count", len(pomodoros)))
+	log.DebugContext(ctx, "found pomodoros", slog.Int("count", len(pomodoros)))
 
-	content := []mcp.Content{}
-	for _, p := range pomodoros {
-		link := &mcp.ResourceLink{
-			URI:      fmt.Sprintf("pomodoro://me/%s", p.ID.String()),
-			Name:     p.ID.String(),
-			MIMEType: "application/json",
+	content := make([]mcp.Content, len(pomodoros))
+	for i, p := range pomodoros {
+		result := pomodoro{
+			ID:        p.ID.String(),
+			StartTime: p.StartTime,
 		}
-		content = append(content, link)
+
+		if p.EndTime.Valid {
+			result.EndTime = p.EndTime.Time
+		}
+
+		contentBytes, err := json.Marshal(result)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to marshal pomodoro: %w", err)
+		}
+
+		content[i] = &mcp.EmbeddedResource{
+			Resource: &mcp.ResourceContents{
+				URI:      fmt.Sprintf("pomodoro://me/%s", p.ID.String()),
+				MIMEType: "application/json; charset=utf-8",
+				Text:     string(contentBytes),
+			},
+		}
 	}
+
 	return &mcp.CallToolResult{
 		Content: content,
 	}, nil, nil

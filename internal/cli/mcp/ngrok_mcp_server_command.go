@@ -207,7 +207,10 @@ var NgrokMCPServerCommand = &cobra.Command{
 		mux := http.NewServeMux()
 		mux.Handle("/mcp", handler)
 
-		ln, err := ngrok.Listen(cmd.Context())
+		ln, err := ngrok.Listen(
+			cmd.Context(),
+			ngrok.WithURL("haley-nonspecious-inexpediently.ngrok-free.dev"),
+		)
 		if err != nil {
 			return err
 		}

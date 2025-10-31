@@ -195,11 +195,11 @@ func NewServer() *mcp.Server {
 	mcp.AddTool(
 		server,
 		&mcp.Tool{
-			Description: "Queries and returns a list of Pomodoros that were started within a specified time range.",
-			Name:        "list_pomodoros_in_time_range",
-			Title:       "List Pomodoros in Time Range",
+			Description: "Queries and returns all pomodoros.",
+			Name:        "get_pomodoros",
+			Title:       "Get Pomodoros",
 		},
-		tools.ListPomodorosInTimeRangeHandler,
+		tools.GetPomodoros,
 	)
 
 	return server
