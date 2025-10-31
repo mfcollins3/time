@@ -168,7 +168,7 @@ package cli
 import "michaelfcollins3.dev/projects/time/internal/cli/mcp"
 
 func init() {
-	rootCommand.AddCommand(mcpCommand)
+	initRootCommand()
 
 	mcpCommand.AddCommand(mcp.STDIOMCPServerCommand)
 	mcpCommand.AddCommand(mcp.HTTPMCPServerCommand)

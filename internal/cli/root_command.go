@@ -166,15 +166,100 @@
 package cli
 
 import (
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	appcontext "michaelfcollins3.dev/projects/time/internal/context"
+	"michaelfcollins3.dev/projects/time/internal/database"
 	"michaelfcollins3.dev/projects/time/internal/pomodoro"
+)
+
+const logLevelFlag = "log-level"
+
+const loggingLevelKey = "logging.level"
+
+const (
+	logLevelDebug   = "debug"
+	logLevelInfo    = "info"
+	logLevelWarning = "warning"
+	logLevelError   = "error"
 )
 
 var rootCommand = &cobra.Command{
 	Use:   "time",
 	Short: "Time is a time management productivity tool for individuals and teams",
 	Long:  ``,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := configureLogging(); err != nil {
+			return fmt.Errorf("failed to configure logging: %w", err)
+		}
+
+		return createDatabase(cmd)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return pomodoro.Start(cmd.Context())
 	},
+}
+
+func initRootCommand() {
+	rootCommand.AddCommand(mcpCommand)
+
+	rootCommand.PersistentFlags().String(
+		logLevelFlag,
+		logLevelInfo,
+		"Set the logging level (debug, info, warning, error)",
+	)
+	viper.BindPFlag(
+		loggingLevelKey,
+		rootCommand.PersistentFlags().Lookup(logLevelFlag),
+	)
+	viper.SetDefault(loggingLevelKey, logLevelInfo)
+}
+
+func configureLogging() error {
+	var level slog.Level
+	value := viper.GetString(loggingLevelKey)
+	switch value {
+	case logLevelDebug:
+		level = slog.LevelDebug
+	case logLevelInfo:
+		level = slog.LevelInfo
+	case logLevelWarning:
+		level = slog.LevelWarn
+	case logLevelError:
+		level = slog.LevelError
+	default:
+		return fmt.Errorf("log level \"%s\" is not recognized", value)
+	}
+
+	log := slog.New(
+		slog.NewTextHandler(
+			os.Stderr,
+			&slog.HandlerOptions{
+				Level: level,
+			},
+		),
+	)
+	slog.SetDefault(log)
+	return nil
+}
+
+func createDatabase(cmd *cobra.Command) error {
+	db, err := database.CreateDatabase()
+	if err != nil {
+		return fmt.Errorf("failed to create database: %w", err)
+	}
+
+	ctx := context.WithValue(
+		cmd.Context(),
+		appcontext.DBContextKey,
+		db,
+	)
+	cmd.SetContext(ctx)
+
+	return nil
 }
