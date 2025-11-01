@@ -168,6 +168,7 @@ package mcp
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -177,6 +178,7 @@ import (
 
 	mcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"michaelfcollins3.dev/projects/time/internal/mcpserver"
 )
 
@@ -185,57 +187,77 @@ var HTTPMCPServerCommand = &cobra.Command{
 	Short: "Starts an MCP server that communicates over HTTP with clients",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		serverCtx, cancel := signal.NotifyContext(
-			cmd.Context(),
-			os.Interrupt,
-			syscall.SIGTERM,
-		)
-		defer cancel()
-
-		server := mcpserver.NewServer()
-		handler := mcp.NewStreamableHTTPHandler(
-			func(r *http.Request) *mcp.Server {
-				return server
-			},
-			&mcp.StreamableHTTPOptions{
-				JSONResponse: true,
-			},
-		)
-
-		mux := http.NewServeMux()
-		mux.Handle("/mcp", handler)
-
-		httpServer := &http.Server{
-			Addr:         ":8080",
-			Handler:      mux,
-			ReadTimeout:  60 * time.Second,
-			WriteTimeout: 60 * time.Second,
-			IdleTimeout:  60 * time.Second,
-			BaseContext: func(_ net.Listener) context.Context {
-				return serverCtx
-			},
-		}
-
-		context.AfterFunc(serverCtx, func() {
-			timeoutCtx, timeoutCancel := context.WithTimeout(
-				context.Background(),
-				30*time.Second,
-			)
-			defer timeoutCancel()
-
-			if err := httpServer.Shutdown(timeoutCtx); err != nil {
-				os.Exit(0)
-			}
-		})
-
-		if err := httpServer.ListenAndServe(); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				return nil
-			}
-
+		listener, err := net.Listen("tcp", ":8080")
+		if err != nil {
 			return err
 		}
 
-		return nil
+		defer listener.Close()
+
+		slog.Info("HTTP MCP server listening at: http://localhost:8080")
+		return serveHTTP(cmd.Context(), listener)
 	},
+}
+
+func serveHTTP(ctx context.Context, ln net.Listener) error {
+	serverCtx, cancel := signal.NotifyContext(
+		ctx,
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer cancel()
+
+	otelShutdown, err := setupOTelSDK(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err = errors.Join(err, otelShutdown(context.Background()))
+	}()
+
+	server := mcpserver.NewServer()
+	handler := mcp.NewStreamableHTTPHandler(
+		func(r *http.Request) *mcp.Server {
+			return server
+		},
+		&mcp.StreamableHTTPOptions{
+			JSONResponse: true,
+		},
+	)
+
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", otelhttp.WithRouteTag("/mcp", handler))
+
+	httpServer := &http.Server{
+		Handler:      otelhttp.NewHandler(mux, "/"),
+		ReadTimeout:  time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		BaseContext: func(_ net.Listener) context.Context {
+			return serverCtx
+		},
+	}
+
+	context.AfterFunc(serverCtx, func() {
+		timeoutCtx, timeoutCancel := context.WithTimeout(
+			context.Background(),
+			30*time.Second,
+		)
+		defer timeoutCancel()
+
+		if err := httpServer.Shutdown(timeoutCtx); err != nil {
+			os.Exit(0)
+		}
+	})
+
+	if err := httpServer.Serve(ln); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
