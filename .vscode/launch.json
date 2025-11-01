@@ -14,7 +14,10 @@
             "args": [
                 "mcp",
                 "ngrok"
-            ]
+            ],
+            "env": {
+                "OTEL_RESOURCE_ATTRIBUTES": "service.name=pomodoro,service.version=0.1.0"
+            }
         },
         {
             "name": "Debug Time (TUI)",

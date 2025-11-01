@@ -176,6 +176,7 @@ var STDIOMCPServerCommand = &cobra.Command{
 	Short: "Starts an MCP server that communicates with the client over STDIO",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return mcpserver.Start(cmd.Context(), &mcp.StdioTransport{})
+		server := mcpserver.NewServer()
+		return server.Run(cmd.Context(), &mcp.StdioTransport{})
 	},
 }

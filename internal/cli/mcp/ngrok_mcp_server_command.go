@@ -166,20 +166,10 @@
 package mcp
 
 import (
-	"context"
-	"errors"
-	"log"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"log/slog"
 
-	mcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
 	"golang.ngrok.com/ngrok/v2"
-	"michaelfcollins3.dev/projects/time/internal/mcpserver"
 )
 
 var NgrokMCPServerCommand = &cobra.Command{
@@ -187,26 +177,6 @@ var NgrokMCPServerCommand = &cobra.Command{
 	Short: "Starts an MCP server that communicates over HTTP with clients",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		serverCtx, cancel := signal.NotifyContext(
-			cmd.Context(),
-			os.Interrupt,
-			syscall.SIGTERM,
-		)
-		defer cancel()
-
-		server := mcpserver.NewServer()
-		handler := mcp.NewStreamableHTTPHandler(
-			func(r *http.Request) *mcp.Server {
-				return server
-			},
-			&mcp.StreamableHTTPOptions{
-				JSONResponse: true,
-			},
-		)
-
-		mux := http.NewServeMux()
-		mux.Handle("/mcp", handler)
-
 		ln, err := ngrok.Listen(
 			cmd.Context(),
 			ngrok.WithURL("haley-nonspecious-inexpediently.ngrok-free.dev"),
@@ -215,37 +185,12 @@ var NgrokMCPServerCommand = &cobra.Command{
 			return err
 		}
 
-		log.Println("ngrok MCP server listening at:", ln.URL())
-		httpServer := &http.Server{
-			Handler:      mux,
-			ReadTimeout:  60 * time.Second,
-			WriteTimeout: 60 * time.Second,
-			IdleTimeout:  60 * time.Second,
-			BaseContext: func(_ net.Listener) context.Context {
-				return serverCtx
-			},
-		}
+		defer ln.Close()
 
-		context.AfterFunc(serverCtx, func() {
-			timeoutCtx, timeoutCancel := context.WithTimeout(
-				context.Background(),
-				30*time.Second,
-			)
-			defer timeoutCancel()
-
-			if err := httpServer.Shutdown(timeoutCtx); err != nil {
-				os.Exit(0)
-			}
-		})
-
-		if err := httpServer.Serve(ln); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				return nil
-			}
-
-			return err
-		}
-
-		return nil
+		slog.Info(
+			"ngrok MCP server listening at:",
+			slog.String("url", ln.URL().String()),
+		)
+		return serveHTTP(cmd.Context(), ln)
 	},
 }
