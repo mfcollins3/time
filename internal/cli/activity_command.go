@@ -172,7 +172,7 @@ import (
 
 var activityCommand = &cobra.Command{
 	Use:   "activity",
-	Short: "",
+	Short: "Creates activities and manages the Activity Inventory",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()

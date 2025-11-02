@@ -172,7 +172,7 @@ import (
 
 var pomodoroCommand = &cobra.Command{
 	Use:   "pomodoro",
-	Short: "",
+	Short: "Tracks and manages pomodoros for activities",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
