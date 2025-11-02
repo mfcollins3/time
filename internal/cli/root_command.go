@@ -163,94 +163,103 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package cli
 
 import (
 	"context"
-	_ "embed"
-	"errors"
 	"fmt"
+	"log/slog"
 	"os"
-	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"gorm.io/gorm"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
+	"michaelfcollins3.dev/projects/time/internal/pomodoro"
 )
 
-//go:embed alarm.mp3
-var alarmSound []byte
+const logLevelFlag = "log-level"
 
-func Start(ctx context.Context) error {
-	startTime := time.Now()
-	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
-	p := tea.NewProgram(
-		newModel(ctx, startTime),
-		tea.WithContext(pomodoroCtx),
+const loggingLevelKey = "logging.level"
+
+const (
+	logLevelDebug   = "debug"
+	logLevelInfo    = "info"
+	logLevelWarning = "warning"
+	logLevelError   = "error"
+)
+
+var rootCommand = &cobra.Command{
+	Use:   "time",
+	Short: "Time is a time management productivity tool for individuals and teams",
+	Long:  ``,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := configureLogging(); err != nil {
+			return fmt.Errorf("failed to configure logging: %w", err)
+		}
+
+		return createDatabase(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return pomodoro.Start(cmd.Context())
+	},
+}
+
+func initRootCommand() {
+	rootCommand.AddCommand(mcpCommand)
+
+	rootCommand.PersistentFlags().String(
+		logLevelFlag,
+		logLevelInfo,
+		"Set the logging level (debug, info, warning, error)",
 	)
-	m, err := p.Run()
-	cancel()
-	completed := errors.Is(err, context.DeadlineExceeded)
-	if err != nil && !completed {
-		return err
+	viper.BindPFlag(
+		loggingLevelKey,
+		rootCommand.PersistentFlags().Lookup(logLevelFlag),
+	)
+	viper.SetDefault(loggingLevelKey, logLevelInfo)
+}
+
+func configureLogging() error {
+	var level slog.Level
+	value := viper.GetString(loggingLevelKey)
+	switch value {
+	case logLevelDebug:
+		level = slog.LevelDebug
+	case logLevelInfo:
+		level = slog.LevelInfo
+	case logLevelWarning:
+		level = slog.LevelWarn
+	case logLevelError:
+		level = slog.LevelError
+	default:
+		return fmt.Errorf("log level \"%s\" is not recognized", value)
 	}
 
-	model := m.(model)
-	if model.err != nil {
-		return model.err
-	}
-
-	if completed {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
-		defer timeoutCancel()
-
-		done, err := playAlarmSound()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
-		}
-
-		err = showDesktopNotification()
-		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"Failed to show desktop notification: %v\n",
-				err,
-			)
-		}
-
-		fmt.Println(model.pomodoroID.String())
-
-		err = completePomodoro(ctx, model)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-		}
-	}
-
+	log := slog.New(
+		slog.NewTextHandler(
+			os.Stderr,
+			&slog.HandlerOptions{
+				Level: level,
+			},
+		),
+	)
+	slog.SetDefault(log)
 	return nil
 }
 
-func completePomodoro(ctx context.Context, model model) error {
-	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
-	rows, err := gorm.G[database.Pomodoro](db).
-		Where("id = ?", model.pomodoroID).
-		Update(dbCtx, "end_time", model.startTime.Add(pomodoroDuration))
-	dbCancel()
+func createDatabase(cmd *cobra.Command) error {
+	db, err := database.CreateDatabase()
 	if err != nil {
-		return fmt.Errorf("failed to update pomodoro end time: %w", err)
+		return fmt.Errorf("failed to create database: %w", err)
 	}
 
-	if rows == 0 {
-		return fmt.Errorf(
-			"failed to update pomodoro end time: no rows affected",
-		)
-	}
+	ctx := context.WithValue(
+		cmd.Context(),
+		appcontext.DBContextKey,
+		db,
+	)
+	cmd.SetContext(ctx)
 
 	return nil
 }

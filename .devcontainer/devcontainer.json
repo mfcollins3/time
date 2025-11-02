@@ -1,6 +1,10 @@
 {
     "name": "time",
     "image": "mcr.microsoft.com/devcontainers/base:2.0.4-noble",
+    "runArgs": [
+        "--env-file",
+        ".devcontainer/devcontainer.env"
+    ],
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/git-lfs:1": {
@@ -9,6 +13,7 @@
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/devcontainers/features/powershell:1": {},
+        "ghcr.io/jckimble/devcontainer-features/ngrok:3": {},
         "ghcr.io/devcontainers/features/node:1": {
             "version": "24.10.0"
         },
@@ -27,6 +32,10 @@
         }
     },
     "remoteUser": "vscode",
+    "containerEnv": {
+        "TIME_NO_SOUND": "1",
+        "TIME_NO_DESKTOP_NOTIFICATION": "1"
+    },
     "onCreateCommand": "bash .devcontainer/scripts/on-create.sh",
     "postCreateCommand": "bash .devcontainer/scripts/post-create.sh"
 }

@@ -167,48 +167,51 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path"
 
-	"gorm.io/gorm"
-	appcontext "michaelfcollins3.dev/projects/time/internal/context"
-	"michaelfcollins3.dev/projects/time/internal/database"
-	"michaelfcollins3.dev/projects/time/internal/pomodoro"
+	"github.com/spf13/viper"
+	"michaelfcollins3.dev/projects/time/internal/cli"
 )
 
 func main() {
-	db, err := createDatabase()
-	if err != nil {
-		log.Fatalf("Failed to create database: %v", err)
+	if err := setupViper(); err != nil {
+		log.Fatalf("failed to configure the application: %v", err)
 	}
 
-	ctx := context.WithValue(context.Background(), appcontext.DBContextKey, db)
-	if err := pomodoro.Start(ctx); err != nil {
+	if err := cli.Execute(context.Background()); err != nil {
 		log.Fatalf("An error occurred while running the command: %v", err)
 	}
 }
 
-func createDatabase() (*gorm.DB, error) {
+func setupViper() error {
+	viper.SetEnvPrefix("TIME")
+	viper.AutomaticEnv()
+
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
+	viper.AddConfigPath(".")
+
 	homePath, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user home directory: %w", err)
+	if err == nil {
+		configPath := path.Join(homePath, ".mfcollins3", "time")
+		viper.AddConfigPath(configPath)
 	}
 
-	dbDir := path.Join(homePath, ".mfcollins3/time")
-	dbPath := path.Join(dbDir, "time.db")
-	if err := os.MkdirAll(dbDir, 0755); err != nil {
-		return nil, fmt.Errorf(
-			"failed to create the ~/.mfcollins3/time directory: %w",
-			err,
-		)
+	viper.AddConfigPath("/etc/mfcollins3/time")
+
+	if err := viper.ReadInConfig(); err != nil {
+		var notFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &notFoundError) {
+			return nil
+		}
+
+		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	db, err := database.NewDB(dbPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return nil
 }

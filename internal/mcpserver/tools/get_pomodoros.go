@@ -163,94 +163,69 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package tools
 
 import (
 	"context"
-	_ "embed"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"os"
+	"log/slog"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gorm.io/gorm"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
 )
 
-//go:embed alarm.mp3
-var alarmSound []byte
-
-func Start(ctx context.Context) error {
-	startTime := time.Now()
-	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
-	p := tea.NewProgram(
-		newModel(ctx, startTime),
-		tea.WithContext(pomodoroCtx),
-	)
-	m, err := p.Run()
-	cancel()
-	completed := errors.Is(err, context.DeadlineExceeded)
-	if err != nil && !completed {
-		return err
-	}
-
-	model := m.(model)
-	if model.err != nil {
-		return model.err
-	}
-
-	if completed {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
-		defer timeoutCancel()
-
-		done, err := playAlarmSound()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
-		}
-
-		err = showDesktopNotification()
-		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"Failed to show desktop notification: %v\n",
-				err,
-			)
-		}
-
-		fmt.Println(model.pomodoroID.String())
-
-		err = completePomodoro(ctx, model)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-		}
-	}
-
-	return nil
+type pomodoro struct {
+	ID        string    `json:"id" jsonschema:"the identifier that uniquely identifies the pomodoro"`
+	StartTime time.Time `json:"startTime" jsonschema:"the date and time that the pomodoro started"`
+	EndTime   time.Time `json:"endTime,omitzero" jsonschema:"the date and time that the pomodoro ended. This value may be omitted if the pomodoro is active or did not finish."`
 }
 
-func completePomodoro(ctx context.Context, model model) error {
+func GetPomodoros(
+	ctx context.Context,
+	req *mcp.CallToolRequest,
+	args any,
+) (*mcp.CallToolResult, any, error) {
+	log := slog.New(mcp.NewLoggingHandler(req.Session, nil))
+	log.DebugContext(ctx, "Querying pomodoros")
+
 	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
-	rows, err := gorm.G[database.Pomodoro](db).
-		Where("id = ?", model.pomodoroID).
-		Update(dbCtx, "end_time", model.startTime.Add(pomodoroDuration))
-	dbCancel()
+	pomodoros, err := gorm.G[database.Pomodoro](db).Find(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to update pomodoro end time: %w", err)
+		return nil, nil, fmt.Errorf("unable to query pomodoros: %w", err)
 	}
 
-	if rows == 0 {
-		return fmt.Errorf(
-			"failed to update pomodoro end time: no rows affected",
-		)
+	log.DebugContext(ctx, "found pomodoros", slog.Int("count", len(pomodoros)))
+
+	content := make([]mcp.Content, len(pomodoros))
+	for i, p := range pomodoros {
+		result := pomodoro{
+			ID:        p.ID.String(),
+			StartTime: p.StartTime,
+		}
+
+		if p.EndTime.Valid {
+			result.EndTime = p.EndTime.Time
+		}
+
+		contentBytes, err := json.Marshal(result)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to marshal pomodoro: %w", err)
+		}
+
+		content[i] = &mcp.EmbeddedResource{
+			Resource: &mcp.ResourceContents{
+				URI:      fmt.Sprintf("pomodoro://me/%s", p.ID.String()),
+				MIMEType: "application/json; charset=utf-8",
+				Text:     string(contentBytes),
+			},
+		}
 	}
 
-	return nil
+	return &mcp.CallToolResult{
+		Content: content,
+	}, nil, nil
 }

@@ -166,12 +166,56 @@
 package database
 
 import (
+	"fmt"
+	"log/slog"
+	"os"
+	"path"
+	"time"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func NewDB(path string) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{})
+func CreateDatabase() (*gorm.DB, error) {
+	homePath, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	dbDir := path.Join(homePath, ".mfcollins3/time")
+	dbPath := path.Join(dbDir, "time.db")
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		return nil, fmt.Errorf(
+			"failed to create the ~/.mfcollins3/time directory: %w",
+			err,
+		)
+	}
+
+	db, err := newDB(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func newDB(path string) (*gorm.DB, error) {
+	db, err := gorm.Open(
+		sqlite.Open(path),
+		&gorm.Config{
+			Logger: logger.NewSlogLogger(
+				slog.Default(),
+				logger.Config{
+					SlowThreshold:             time.Second,
+					LogLevel:                  logger.Silent,
+					IgnoreRecordNotFoundError: true,
+					ParameterizedQueries:      true,
+					Colorful:                  false,
+				},
+			),
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

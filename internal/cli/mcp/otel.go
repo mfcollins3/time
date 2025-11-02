@@ -163,94 +163,122 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package mcp
 
 import (
 	"context"
-	_ "embed"
 	"errors"
-	"fmt"
-	"os"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"gorm.io/gorm"
-	appcontext "michaelfcollins3.dev/projects/time/internal/context"
-	"michaelfcollins3.dev/projects/time/internal/database"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/log/global"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-//go:embed alarm.mp3
-var alarmSound []byte
+func setupOTelSDK(ctx context.Context) (func(context.Context) error, error) {
+	var shutdownFuncs []func(context.Context) error
+	var err error
 
-func Start(ctx context.Context) error {
-	startTime := time.Now()
-	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
-	p := tea.NewProgram(
-		newModel(ctx, startTime),
-		tea.WithContext(pomodoroCtx),
-	)
-	m, err := p.Run()
-	cancel()
-	completed := errors.Is(err, context.DeadlineExceeded)
-	if err != nil && !completed {
+	shutdown := func(ctx context.Context) error {
+		var err error
+		for _, fn := range shutdownFuncs {
+			err = errors.Join(err, fn(ctx))
+		}
+
+		shutdownFuncs = nil
 		return err
 	}
 
-	model := m.(model)
-	if model.err != nil {
-		return model.err
+	handleErr := func(inErr error) {
+		err = errors.Join(inErr, shutdown(ctx))
 	}
 
-	if completed {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
-		defer timeoutCancel()
+	prop := newPropagator()
+	otel.SetTextMapPropagator(prop)
 
-		done, err := playAlarmSound()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
-		}
-
-		err = showDesktopNotification()
-		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"Failed to show desktop notification: %v\n",
-				err,
-			)
-		}
-
-		fmt.Println(model.pomodoroID.String())
-
-		err = completePomodoro(ctx, model)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case <-done:
-		case <-timeoutCtx.Done():
-		}
+	tracerProvider, err := newTracerProvider()
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
 	}
 
-	return nil
+	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
+	otel.SetTracerProvider(tracerProvider)
+
+	meterProvider, err := newMeterProvider()
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
+	}
+
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+
+	loggerProvider, err := newLoggerProvider()
+	if err != nil {
+		handleErr(err)
+		return shutdown, err
+	}
+
+	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
+	global.SetLoggerProvider(loggerProvider)
+
+	return shutdown, err
 }
 
-func completePomodoro(ctx context.Context, model model) error {
-	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
-	rows, err := gorm.G[database.Pomodoro](db).
-		Where("id = ?", model.pomodoroID).
-		Update(dbCtx, "end_time", model.startTime.Add(pomodoroDuration))
-	dbCancel()
+func newPropagator() propagation.TextMapPropagator {
+	return propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	)
+}
+
+func newTracerProvider() (*trace.TracerProvider, error) {
+	traceExporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
 	if err != nil {
-		return fmt.Errorf("failed to update pomodoro end time: %w", err)
+		return nil, err
 	}
 
-	if rows == 0 {
-		return fmt.Errorf(
-			"failed to update pomodoro end time: no rows affected",
-		)
+	tracerProvider := trace.NewTracerProvider(
+		trace.WithBatcher(
+			traceExporter,
+			trace.WithBatchTimeout(time.Second),
+		),
+	)
+	return tracerProvider, nil
+}
+
+func newMeterProvider() (*metric.MeterProvider, error) {
+	metricExporter, err := stdoutmetric.New()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(
+			metric.NewPeriodicReader(
+				metricExporter,
+				metric.WithInterval(3*time.Second),
+			),
+		),
+	)
+	return meterProvider, nil
+}
+
+func newLoggerProvider() (*log.LoggerProvider, error) {
+	logExporter, err := stdoutlog.New()
+	if err != nil {
+		return nil, err
+	}
+
+	loggerProvider := log.NewLoggerProvider(
+		log.WithProcessor(log.NewBatchProcessor(logExporter)),
+	)
+	return loggerProvider, nil
 }
