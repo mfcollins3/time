@@ -163,15 +163,44 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package database
+package activity
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/spf13/cobra"
 	"gorm.io/gorm"
+	appcontext "michaelfcollins3.dev/projects/time/internal/context"
+	"michaelfcollins3.dev/projects/time/internal/database"
 	"michaelfcollins3.dev/projects/time/internal/dbid"
 )
 
-type Model struct {
-	gorm.Model
+var AddActivityCommand = &cobra.Command{
+	Use:   "add",
+	Short: "",
+	Long:  ``,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := dbid.NewID()
+		title := args[0]
+		activity := &database.Activity{
+			Model: database.Model{
+				ID: id,
+			},
+			Title: title,
+		}
 
-	ID dbid.ID `gorm:"type:text;primaryKey"`
+		db := cmd.Context().Value(appcontext.DBContextKey).(*gorm.DB)
+		timeoutCtx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
+		err := gorm.G[database.Activity](db).Create(timeoutCtx, activity)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("unable to create the activity: %w", err)
+		}
+
+		fmt.Println(id.String())
+		return nil
+	},
 }

@@ -167,6 +167,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/cli/mcp"
 )
 
 var mcpCommand = &cobra.Command{
@@ -176,4 +177,10 @@ var mcpCommand = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
+}
+
+func initMCPCommand() {
+	mcpCommand.AddCommand(mcp.HTTPMCPServerCommand)
+	mcpCommand.AddCommand(mcp.NgrokMCPServerCommand)
+	mcpCommand.AddCommand(mcp.STDIOMCPServerCommand)
 }

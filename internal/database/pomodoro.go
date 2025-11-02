@@ -168,11 +168,14 @@ package database
 import (
 	"database/sql"
 	"time"
+
+	"michaelfcollins3.dev/projects/time/internal/dbid"
 )
 
 type Pomodoro struct {
 	Model
 
-	StartTime time.Time
-	EndTime   sql.NullTime
+	StartTime  time.Time
+	EndTime    sql.NullTime
+	ActivityID sql.Null[dbid.ID] `gorm:"type:text;index"`
 }

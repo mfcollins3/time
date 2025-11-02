@@ -163,15 +163,18 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package database
+package pomodoro
 
 import (
-	"gorm.io/gorm"
-	"michaelfcollins3.dev/projects/time/internal/dbid"
+	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/pomodoro"
 )
 
-type Model struct {
-	gorm.Model
-
-	ID dbid.ID `gorm:"type:text;primaryKey"`
+var StartPomodoroCommand = &cobra.Command{
+	Use:   "start",
+	Short: "Starts a pomodoro",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return pomodoro.Start(cmd.Context())
+	},
 }

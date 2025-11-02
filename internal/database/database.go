@@ -220,7 +220,7 @@ func newDB(path string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&Pomodoro{})
+	err = db.AutoMigrate(&Activity{}, &Pomodoro{})
 	if err != nil {
 		return nil, err
 	}

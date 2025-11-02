@@ -165,12 +165,9 @@
 
 package cli
 
-import "michaelfcollins3.dev/projects/time/internal/cli/mcp"
-
 func init() {
 	initRootCommand()
-
-	mcpCommand.AddCommand(mcp.STDIOMCPServerCommand)
-	mcpCommand.AddCommand(mcp.HTTPMCPServerCommand)
-	mcpCommand.AddCommand(mcp.NgrokMCPServerCommand)
+	initActivityCommand()
+	initMCPCommand()
+	initPomodoroCommand()
 }
