@@ -23,7 +23,7 @@
 //   plugins, connectors, or tools that interact with the Software through
 //   documented interfaces, data formats, or APIs, but which are not a
 //   substantial copy of the Software itself.
-// - "Commercial Release" means a future releaase of the Software made
+// - "Commercial Release" means a future release of the Software made
 //   available by the copyright holder under a different license, including a
 //   commercial license.
 //
@@ -109,7 +109,7 @@
 // The Software is licensed, not sold. All rights, title, and interest in and
 // to the Software (including all intellectual property rights) are and shall
 // remain with the copyright holder and its licensors. Except for the limited
-// rights expressly granted herin, no other rights are granted by implciation,
+// rights expressly granted herein, no other rights are granted by implication,
 // estoppel, or otherwise.
 //
 // 7. Warranty Disclaimer
