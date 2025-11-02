@@ -191,4 +191,4 @@ jobs:
             build-docker
             build-windows
             build-macos
-          dispatch-type: repository_dispatch
+          dispatch-type: repository
