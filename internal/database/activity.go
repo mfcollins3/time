@@ -165,13 +165,9 @@
 
 package database
 
-import (
-	"gorm.io/gorm"
-	"michaelfcollins3.dev/projects/time/internal/dbid"
-)
+type Activity struct {
+	Model
 
-type Model struct {
-	gorm.Model
-
-	ID dbid.ID `gorm:"type:text;primaryKey"`
+	Title     string
+	Pomodoros []Pomodoro
 }

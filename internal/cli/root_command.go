@@ -175,7 +175,6 @@ import (
 	"github.com/spf13/viper"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
-	"michaelfcollins3.dev/projects/time/internal/pomodoro"
 )
 
 const logLevelFlag = "log-level"
@@ -201,12 +200,14 @@ var rootCommand = &cobra.Command{
 		return createDatabase(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return pomodoro.Start(cmd.Context())
+		return cmd.Help()
 	},
 }
 
 func initRootCommand() {
+	rootCommand.AddCommand(activityCommand)
 	rootCommand.AddCommand(mcpCommand)
+	rootCommand.AddCommand(pomodoroCommand)
 
 	rootCommand.PersistentFlags().String(
 		logLevelFlag,
