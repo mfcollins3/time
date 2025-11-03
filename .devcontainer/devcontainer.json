@@ -14,6 +14,7 @@
         "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/devcontainers/features/powershell:1": {},
         "ghcr.io/jckimble/devcontainer-features/ngrok:3": {},
+        "./features/sqlite3": {},
         "ghcr.io/devcontainers/features/node:1": {
             "version": "24.10.0"
         },

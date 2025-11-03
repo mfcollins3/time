@@ -1,0 +1,10 @@
+{
+    "id": "sqlite3",
+    "version": "1.0.0",
+    "name": "SQLite 3",
+    "description": "Installs the SQLite 3 command-line interface",
+    "options": {},
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ]
+}
