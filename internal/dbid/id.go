@@ -183,6 +183,15 @@ func NewID() ID {
 	return ID(id)
 }
 
+func Parse(s string) (ID, error) {
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return ID{}, fmt.Errorf("failed to parse UUID: %w", err)
+	}
+
+	return ID(id), nil
+}
+
 func (id *ID) Scan(src interface{}) error {
 	u := uuid.UUID{}
 	err := u.Scan(src)

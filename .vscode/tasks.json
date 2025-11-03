@@ -12,7 +12,10 @@
                 "--headless",
                 "--listen=:2345",
                 "--api-version=2",
-                "${workspaceFolder}/cmd/time"
+                "${workspaceFolder}/cmd/time",
+                "--",
+                "pomodoro",
+                "start"
             ],
             "isBackground": true,
             "problemMatcher": {
