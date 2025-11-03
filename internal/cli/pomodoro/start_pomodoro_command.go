@@ -166,15 +166,67 @@
 package pomodoro
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/dbid"
 	"michaelfcollins3.dev/projects/time/internal/pomodoro"
 )
 
-var StartPomodoroCommand = &cobra.Command{
-	Use:   "start",
-	Short: "Starts a pomodoro",
-	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return pomodoro.Start(cmd.Context())
-	},
-}
+var (
+	activityID *string
+
+	StartPomodoroCommand = &cobra.Command{
+		Use:   "start",
+		Short: "Starts a pomodoro",
+		Long:  ``,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var id dbid.ID
+
+			if len(*activityID) == 0 {
+				// If no activity ID is provided, try to read it from stdin.
+				// Use a timeout so if the ID is not provided via stdin, the
+				// command will continue without the activity ID.
+				stdinChan := make(chan string, 1)
+				go func() {
+					stat, err := os.Stdin.Stat()
+					// Check if stdin is a pipe
+					if err == nil && (stat.Mode()&os.ModeCharDevice) == 0 {
+						// Data is being piped to stdin
+						scanner := bufio.NewScanner(os.Stdin)
+						if scanner.Scan() {
+							stdinChan <- strings.TrimSpace(scanner.Text())
+						}
+					}
+					close(stdinChan)
+				}()
+
+				select {
+				case input := <-stdinChan:
+					if input != "" {
+						*activityID = input
+					}
+				case <-time.After(500 * time.Millisecond):
+					// Timeout: continue without activity ID
+				}
+			}
+
+			if len(*activityID) > 0 {
+				var err error
+				id, err = dbid.Parse(*activityID)
+				if err != nil {
+					return fmt.Errorf(
+						"the activity identifier was invalid: %w",
+						err,
+					)
+				}
+			}
+
+			return pomodoro.Start(cmd.Context(), id)
+		},
+	}
+)

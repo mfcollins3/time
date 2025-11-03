@@ -177,16 +177,17 @@ import (
 	"gorm.io/gorm"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
+	"michaelfcollins3.dev/projects/time/internal/dbid"
 )
 
 //go:embed alarm.mp3
 var alarmSound []byte
 
-func Start(ctx context.Context) error {
+func Start(ctx context.Context, activityID dbid.ID) error {
 	startTime := time.Now()
 	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
 	p := tea.NewProgram(
-		newModel(ctx, startTime),
+		newModel(ctx, activityID, startTime),
 		tea.WithContext(pomodoroCtx),
 	)
 	m, err := p.Run()
