@@ -183,9 +183,14 @@ type model struct {
 	progress         progress.Model
 	err              error
 	pomodoroID       dbid.ID
+	activityID       dbid.ID
 }
 
-func newModel(ctx context.Context, startTime time.Time) model {
+func newModel(
+	ctx context.Context,
+	activityID dbid.ID,
+	startTime time.Time,
+) model {
 	return model{
 		ctx:              ctx,
 		startTime:        startTime,
@@ -196,12 +201,13 @@ func newModel(ctx context.Context, startTime time.Time) model {
 			progress.WithWidth(50),
 			progress.WithoutPercentage(),
 		),
+		activityID: activityID,
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
-		createPomodoro(m.ctx, m.startTime),
+		createPomodoro(m.ctx, m.activityID, m.startTime),
 		tick(),
 	)
 }
