@@ -191,9 +191,10 @@ const (
 )
 
 var rootCommand = &cobra.Command{
-	Use:   "time",
-	Short: "Time is a time management productivity tool for individuals and teams",
-	Long:  ``,
+	Use:     "time",
+	Version: "0.1.0",
+	Short:   "Time is a time management productivity tool for individuals and teams",
+	Long:    ``,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := configureLogging(); err != nil {
 			return fmt.Errorf("failed to configure logging: %w", err)
