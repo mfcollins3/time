@@ -163,10 +163,17 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package activity
 
-import "michaelfcollins3.dev/projects/time/internal/cli/pomodoro/start"
+import (
+	"github.com/spf13/cobra"
+)
 
-func init() {
-	PomodoroCommand.AddCommand(start.StartPomodoroCommand)
+var ActivityCommand = &cobra.Command{
+	Use:   "activity",
+	Short: "Creates activities and manages the Activity Inventory",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }

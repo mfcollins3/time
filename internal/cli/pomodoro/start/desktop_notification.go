@@ -1,3 +1,5 @@
+//go:build !docker
+
 // Copyright 2025 Michael F. Collins, III
 //
 // Time Source-Available Temporary License (v0.1)
@@ -163,8 +165,28 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package start
 
-type errorMsg struct {
-	err error
+import (
+	"fmt"
+	"os"
+
+	"github.com/gen2brain/beeep"
+)
+
+func showDesktopNotification() error {
+	if os.Getenv("TIME_NO_DESKTOP_NOTIFICATION") == "1" {
+		return nil
+	}
+
+	err := beeep.Notify(
+		"Pomodoro Complete",
+		"Congratulations, your pomodoro is complete! You should now take a break before starting another pomodoro.",
+		"",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to send desktop notification: %w", err)
+	}
+
+	return nil
 }

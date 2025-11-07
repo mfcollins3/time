@@ -163,70 +163,67 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package selection
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-	"strings"
-	"time"
+	"context"
 
-	"github.com/spf13/cobra"
-	"michaelfcollins3.dev/projects/time/internal/dbid"
-	"michaelfcollins3.dev/projects/time/internal/pomodoro"
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
-var (
-	activityID *string
+type model struct {
+	ctx        context.Context
+	list       list.Model
+	ActivityID string
+}
 
-	StartPomodoroCommand = &cobra.Command{
-		Use:   "start",
-		Short: "Starts a pomodoro",
-		Long:  ``,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var id dbid.ID
-
-			if len(*activityID) == 0 {
-				// If no activity ID is provided, try to read it from stdin.
-				// Use a timeout so if the ID is not provided via stdin, the
-				// command will continue without the activity ID.
-				stdinChan := make(chan string, 1)
-				go func() {
-					stat, err := os.Stdin.Stat()
-					// Check if stdin is a pipe
-					if err == nil && (stat.Mode()&os.ModeCharDevice) == 0 {
-						// Data is being piped to stdin
-						scanner := bufio.NewScanner(os.Stdin)
-						if scanner.Scan() {
-							stdinChan <- strings.TrimSpace(scanner.Text())
-						}
-					}
-					close(stdinChan)
-				}()
-
-				select {
-				case input := <-stdinChan:
-					if input != "" {
-						*activityID = input
-					}
-				case <-time.After(500 * time.Millisecond):
-					// Timeout: continue without activity ID
-				}
-			}
-
-			if len(*activityID) > 0 {
-				var err error
-				id, err = dbid.Parse(*activityID)
-				if err != nil {
-					return fmt.Errorf(
-						"the activity identifier was invalid: %w",
-						err,
-					)
-				}
-			}
-
-			return pomodoro.Start(cmd.Context(), id)
-		},
+func newModel(ctx context.Context) model {
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+	delegate.SetSpacing(0)
+	l := list.New(nil, delegate, 60, 10)
+	l.Title = "Select an Activity"
+	l.SetShowTitle(true)
+	l.SetShowHelp(true)
+	l.SetShowStatusBar(false)
+	return model{
+		ctx:  ctx,
+		list: l,
 	}
-)
+}
+
+func (m model) Init() tea.Cmd {
+	return loadActivities(m.ctx)
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.list.SetWidth(msg.Width)
+		m.list.SetHeight(msg.Height)
+
+	case loadActivitiesMsg:
+		cmd = m.list.SetItems(msg.Activities)
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter":
+			m.ActivityID = m.list.SelectedItem().(activityItem).id
+			return m, tea.Quit
+
+		default:
+			m.list, cmd = m.list.Update(msg)
+		}
+
+	default:
+		m.list, cmd = m.list.Update(msg)
+	}
+
+	return m, cmd
+}
+
+func (m model) View() string {
+	return m.list.View()
+}

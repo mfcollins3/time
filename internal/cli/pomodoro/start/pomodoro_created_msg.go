@@ -163,116 +163,59 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package start
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"gorm.io/gorm"
+	appcontext "michaelfcollins3.dev/projects/time/internal/context"
+	"michaelfcollins3.dev/projects/time/internal/database"
 	"michaelfcollins3.dev/projects/time/internal/dbid"
 )
 
-type model struct {
-	ctx              context.Context
-	startTime        time.Time
-	minutesRemaining int
-	secondsRemaining int
-	progress         progress.Model
-	err              error
-	pomodoroID       dbid.ID
-	activityID       dbid.ID
+type pomodoroCreatedMsg struct {
+	ID dbid.ID
 }
 
-func newModel(
+func createPomodoro(
 	ctx context.Context,
 	activityID dbid.ID,
 	startTime time.Time,
-) model {
-	return model{
-		ctx:              ctx,
-		startTime:        startTime,
-		minutesRemaining: 25,
-		secondsRemaining: 0,
-		progress: progress.New(
-			progress.WithSolidFill("#00ff00"),
-			progress.WithWidth(50),
-			progress.WithoutPercentage(),
-		),
-		activityID: activityID,
-	}
-}
-
-func (m model) Init() tea.Cmd {
-	return tea.Batch(
-		createPomodoro(m.ctx, m.activityID, m.startTime),
-		tick(),
-	)
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tickMsg:
-		m = m.updateTime(msg)
-		percent := 1 - (float64(m.minutesRemaining*60+m.secondsRemaining) /
-			float64(pomodoroDuration.Seconds()))
-		if percent >= 0.8 {
-			m.progress.FullColor = "#ffff00"
+) tea.Cmd {
+	return func() tea.Msg {
+		db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
+		id := dbid.NewID()
+		pomodoro := database.Pomodoro{
+			Model: database.Model{
+				ID: id,
+			},
+			StartTime: startTime,
 		}
 
-		if percent >= 0.95 {
-			m.progress.FullColor = "#ff0000"
+		var zeroID dbid.ID
+		if activityID != zeroID {
+			pomodoro.ActivityID = sql.Null[dbid.ID]{
+				Valid: true,
+				V:     activityID,
+			}
 		}
 
-		return m, tea.Batch(
-			m.progress.SetPercent(percent),
-			tick(),
-		)
-
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
+		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err := gorm.G[database.Pomodoro](db).Create(timeoutCtx, &pomodoro)
+		cancel()
+		if err != nil {
+			return errorMsg{
+				err: fmt.Errorf("failed to create pomodoro: %w", err),
+			}
 		}
 
-	case progress.FrameMsg:
-		progressModel, cmd := m.progress.Update(msg)
-		m.progress = progressModel.(progress.Model)
-		return m, cmd
-
-	case errorMsg:
-		m.err = msg.err
-		return m, tea.Quit
-
-	case pomodoroCreatedMsg:
-		m.pomodoroID = msg.ID
-		return m, nil
+		return pomodoroCreatedMsg{
+			ID: id,
+		}
 	}
-
-	return m, nil
-}
-
-func (m model) View() string {
-	return fmt.Sprintf(
-		"%s %d:%02d",
-		m.progress.View(),
-		m.minutesRemaining,
-		m.secondsRemaining,
-	)
-}
-
-func (m model) updateTime(msg tickMsg) model {
-	timeRemaining := pomodoroDuration - msg.time.Sub(m.startTime)
-	expired := timeRemaining <= 0
-	if expired {
-		m.minutesRemaining = 0
-		m.secondsRemaining = 0
-	} else {
-		m.minutesRemaining = int(timeRemaining.Minutes())
-		m.secondsRemaining = int(timeRemaining.Seconds()) % 60
-	}
-
-	return m
 }
