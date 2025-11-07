@@ -177,6 +177,7 @@ import (
 
 type model struct {
 	ctx              context.Context
+	pomodoroDuration time.Duration
 	startTime        time.Time
 	minutesRemaining int
 	secondsRemaining int
@@ -190,12 +191,14 @@ func newModel(
 	ctx context.Context,
 	activityID dbid.ID,
 	startTime time.Time,
+	pomodoroDuration time.Duration,
 ) model {
 	return model{
 		ctx:              ctx,
 		startTime:        startTime,
 		minutesRemaining: 25,
 		secondsRemaining: 0,
+		pomodoroDuration: pomodoroDuration,
 		progress: progress.New(
 			progress.WithSolidFill("#00ff00"),
 			progress.WithWidth(50),
@@ -217,7 +220,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tickMsg:
 		m = m.updateTime(msg)
 		percent := 1 - (float64(m.minutesRemaining*60+m.secondsRemaining) /
-			float64(pomodoroDuration.Seconds()))
+			float64(m.pomodoroDuration.Seconds()))
 		if percent >= 0.8 {
 			m.progress.FullColor = "#ffff00"
 		}
@@ -264,7 +267,7 @@ func (m model) View() string {
 }
 
 func (m model) updateTime(msg tickMsg) model {
-	timeRemaining := pomodoroDuration - msg.time.Sub(m.startTime)
+	timeRemaining := m.pomodoroDuration - msg.time.Sub(m.startTime)
 	expired := timeRemaining <= 0
 	if expired {
 		m.minutesRemaining = 0

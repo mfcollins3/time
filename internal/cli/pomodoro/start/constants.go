@@ -167,4 +167,4 @@ package start
 
 import "time"
 
-const pomodoroDuration = 1 * time.Minute
+const defaultPomodoroDuration = 25 * time.Minute
