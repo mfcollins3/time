@@ -172,4 +172,9 @@ func init() {
 		"",
 		"The activity to focus on during the pomodoro",
 	)
+	pomodoroDuration = StartPomodoroCommand.Flags().Duration(
+		"duration",
+		defaultPomodoroDuration,
+		"The duration of the pomodoro. This should be a valid time duration string (e.g., '25m' for 25 minutes). Valid time units are \"ns\", \"us\" (or \"µs\"), \"ms\", \"s\", \"m\", \"h\".",
+	)
 }

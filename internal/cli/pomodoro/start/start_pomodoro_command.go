@@ -171,6 +171,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
@@ -178,7 +179,8 @@ import (
 )
 
 var (
-	activityID *string
+	activityID       *string
+	pomodoroDuration *time.Duration
 
 	StartPomodoroCommand = &cobra.Command{
 		Use:   "start",
@@ -211,7 +213,7 @@ var (
 				}
 			}
 
-			return start(cmd.Context(), id)
+			return start(cmd.Context(), id, *pomodoroDuration)
 		},
 	}
 )

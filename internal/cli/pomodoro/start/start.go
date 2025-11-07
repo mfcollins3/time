@@ -183,11 +183,15 @@ import (
 //go:embed alarm.mp3
 var alarmSound []byte
 
-func start(ctx context.Context, activityID dbid.ID) error {
+func start(
+	ctx context.Context,
+	activityID dbid.ID,
+	pomodoroDuration time.Duration,
+) error {
 	startTime := time.Now()
 	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
 	p := tea.NewProgram(
-		newModel(ctx, activityID, startTime),
+		newModel(ctx, activityID, startTime, pomodoroDuration),
 		tea.WithContext(pomodoroCtx),
 	)
 	m, err := p.Run()
@@ -222,7 +226,7 @@ func start(ctx context.Context, activityID dbid.ID) error {
 
 		fmt.Println(model.pomodoroID.String())
 
-		err = completePomodoro(ctx, model)
+		err = completePomodoro(ctx, model, pomodoroDuration)
 		if err != nil {
 			return err
 		}
@@ -236,7 +240,11 @@ func start(ctx context.Context, activityID dbid.ID) error {
 	return nil
 }
 
-func completePomodoro(ctx context.Context, model model) error {
+func completePomodoro(
+	ctx context.Context,
+	model model,
+	pomodoroDuration time.Duration,
+) error {
 	db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
 	dbCtx, dbCancel := context.WithTimeout(ctx, 5*time.Second)
 	rows, err := gorm.G[database.Pomodoro](db).
