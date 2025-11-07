@@ -167,7 +167,5 @@ package cli
 
 func init() {
 	initRootCommand()
-	initActivityCommand()
 	initMCPCommand()
-	initPomodoroCommand()
 }

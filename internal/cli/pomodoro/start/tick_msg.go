@@ -163,10 +163,20 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package start
 
-import "michaelfcollins3.dev/projects/time/internal/cli/pomodoro/start"
+import (
+	"time"
 
-func init() {
-	PomodoroCommand.AddCommand(start.StartPomodoroCommand)
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+type tickMsg struct {
+	time time.Time
+}
+
+func tick() tea.Cmd {
+	return tea.Every(200*time.Millisecond, func(t time.Time) tea.Msg {
+		return tickMsg{time: t}
+	})
 }

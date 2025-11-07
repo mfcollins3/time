@@ -163,8 +163,55 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package start
 
-import "time"
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
+	"strings"
 
-const pomodoroDuration = 1 * time.Minute
+	"github.com/charmbracelet/x/term"
+	"github.com/spf13/cobra"
+	"michaelfcollins3.dev/projects/time/internal/dbid"
+)
+
+var (
+	activityID *string
+
+	StartPomodoroCommand = &cobra.Command{
+		Use:   "start",
+		Short: "Starts a pomodoro",
+		Long:  ``,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var id dbid.ID
+
+			if len(*activityID) == 0 {
+				if !term.IsTerminal(uintptr(os.Stdin.Fd())) {
+					// The input is being piped in from another process.
+					reader := bufio.NewReader(os.Stdin)
+					input, err := reader.ReadString('\n')
+					if err != nil && err != io.EOF {
+						return fmt.Errorf("failed to read activity ID from stdin: %w", err)
+					}
+
+					*activityID = strings.TrimSpace(input)
+				}
+			}
+
+			if len(*activityID) > 0 {
+				var err error
+				id, err = dbid.Parse(*activityID)
+				if err != nil {
+					return fmt.Errorf(
+						"the activity identifier was invalid: %w",
+						err,
+					)
+				}
+			}
+
+			return start(cmd.Context(), id)
+		},
+	}
+)

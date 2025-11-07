@@ -173,6 +173,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"michaelfcollins3.dev/projects/time/internal/cli/activity"
+	"michaelfcollins3.dev/projects/time/internal/cli/pomodoro"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
 )
@@ -205,9 +207,9 @@ var rootCommand = &cobra.Command{
 }
 
 func initRootCommand() {
-	rootCommand.AddCommand(activityCommand)
+	rootCommand.AddCommand(activity.ActivityCommand)
 	rootCommand.AddCommand(mcpCommand)
-	rootCommand.AddCommand(pomodoroCommand)
+	rootCommand.AddCommand(pomodoro.PomodoroCommand)
 
 	rootCommand.PersistentFlags().String(
 		logLevelFlag,

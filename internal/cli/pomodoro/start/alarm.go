@@ -1,3 +1,5 @@
+//go:build !docker
+
 // Copyright 2025 Michael F. Collins, III
 //
 // Time Source-Available Temporary License (v0.1)
@@ -163,22 +165,48 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package cli
+package start
 
 import (
-	"github.com/spf13/cobra"
-	"michaelfcollins3.dev/projects/time/internal/cli/pomodoro"
+	"bytes"
+	"io"
+	"os"
+	"time"
+
+	"github.com/gopxl/beep"
+	"github.com/gopxl/beep/mp3"
+	"github.com/gopxl/beep/speaker"
 )
 
-var pomodoroCommand = &cobra.Command{
-	Use:   "pomodoro",
-	Short: "Tracks and manages pomodoros for activities",
-	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmd.Help()
-	},
-}
+func playAlarmSound() (chan bool, error) {
+	done := make(chan bool, 1)
+	if os.Getenv("TIME_NO_SOUND") == "1" {
+		done <- true
+		return done, nil
+	}
 
-func initPomodoroCommand() {
-	pomodoroCommand.AddCommand(pomodoro.StartPomodoroCommand)
+	streamer, format, err := mp3.Decode(
+		io.NopCloser(bytes.NewReader(alarmSound)),
+	)
+	if err != nil {
+		return done, err
+	}
+
+	defer func() {
+		_ = streamer.Close()
+	}()
+
+	err = speaker.Init(
+		format.SampleRate,
+		format.SampleRate.N(time.Second/10),
+	)
+	if err != nil {
+		return done, err
+	}
+
+	speaker.Play(beep.Seq(streamer, beep.Callback(func() {
+		done <- true
+	})))
+
+	return done, nil
 }

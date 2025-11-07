@@ -1,5 +1,3 @@
-//go:build docker
-
 // Copyright 2025 Michael F. Collins, III
 //
 // Time Source-Available Temporary License (v0.1)
@@ -165,8 +163,8 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package start
 
-func showDesktopNotification() error {
-	return nil
-}
+import "time"
+
+const pomodoroDuration = 1 * time.Minute

@@ -73,6 +73,12 @@ The Time program will start the Pomodoro timer and begin the countdown from 25 m
 
 > :exclamation: When running Time from a container, no alarm is played and there is no desktop notification. These features are not available when running from a container.
 
-To link the pomodoro to an activity, you can use the `--activity` flag with the activity's identitifier:
+The real power of pomodoros is when you use them to track your progress on activities. To do that, you can select an activity and run a pomodoro attached to that activity. You can later use the pomodoros to analyze your work on completing activities. To start a pomodoro for an activity, run:
+
+    time activity select | time pomodoro start
+
+The `time activity select` command will display a list of activities from the Activity Inventory. When you select the activity that you want to work on, the activity's identifier will be passed to the `time pomodoro start` command, the Pomodoro timer will start, and the pomodoro will be credited to the activity.
+
+If you know the identifier of the activity you want to work with, you can link the pomodoro to an activity manually. Use the `--activity` flag with the activity's identitifier:
 
     time pomodoro start --activity 019a46d0-8a5f-7698-a5c5-d29b15cdec05

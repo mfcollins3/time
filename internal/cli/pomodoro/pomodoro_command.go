@@ -1,5 +1,3 @@
-//go:build docker
-
 // Copyright 2025 Michael F. Collins, III
 //
 // Time Source-Available Temporary License (v0.1)
@@ -167,8 +165,15 @@
 
 package pomodoro
 
-func playAlarmSound() (chan bool, error) {
-	done := make(chan bool, 1)
-	done <- true
-	return done, nil
+import (
+	"github.com/spf13/cobra"
+)
+
+var PomodoroCommand = &cobra.Command{
+	Use:   "pomodoro",
+	Short: "Tracks and manages pomodoros for activities",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }

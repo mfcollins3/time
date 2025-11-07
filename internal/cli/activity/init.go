@@ -163,22 +163,11 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package cli
+package activity
 
-import (
-	"github.com/spf13/cobra"
-	"michaelfcollins3.dev/projects/time/internal/cli/activity"
-)
+import "michaelfcollins3.dev/projects/time/internal/cli/activity/selection"
 
-var activityCommand = &cobra.Command{
-	Use:   "activity",
-	Short: "Creates activities and manages the Activity Inventory",
-	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmd.Help()
-	},
-}
-
-func initActivityCommand() {
-	activityCommand.AddCommand(activity.AddActivityCommand)
+func init() {
+	ActivityCommand.AddCommand(AddActivityCommand)
+	ActivityCommand.AddCommand(selection.SelectActivityCommand)
 }

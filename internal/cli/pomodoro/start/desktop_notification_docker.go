@@ -1,3 +1,5 @@
+//go:build docker
+
 // Copyright 2025 Michael F. Collins, III
 //
 // Time Source-Available Temporary License (v0.1)
@@ -163,10 +165,8 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package start
 
-import "michaelfcollins3.dev/projects/time/internal/cli/pomodoro/start"
-
-func init() {
-	PomodoroCommand.AddCommand(start.StartPomodoroCommand)
+func showDesktopNotification() error {
+	return nil
 }

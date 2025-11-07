@@ -163,59 +163,45 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package selection
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"gorm.io/gorm"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
-	"michaelfcollins3.dev/projects/time/internal/dbid"
 )
 
-type pomodoroCreatedMsg struct {
-	ID dbid.ID
+type loadActivitiesMsg struct {
+	Activities []list.Item
 }
 
-func createPomodoro(
-	ctx context.Context,
-	activityID dbid.ID,
-	startTime time.Time,
-) tea.Cmd {
+func loadActivities(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
 		db := ctx.Value(appcontext.DBContextKey).(*gorm.DB)
-		id := dbid.NewID()
-		pomodoro := database.Pomodoro{
-			Model: database.Model{
-				ID: id,
-			},
-			StartTime: startTime,
-		}
 
-		var zeroID dbid.ID
-		if activityID != zeroID {
-			pomodoro.ActivityID = sql.Null[dbid.ID]{
-				Valid: true,
-				V:     activityID,
-			}
-		}
-
-		timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		err := gorm.G[database.Pomodoro](db).Create(timeoutCtx, &pomodoro)
+		queryContext, cancel := context.WithTimeout(ctx, 10*time.Second)
+		activities, err := gorm.G[database.Activity](db).Find(queryContext)
 		cancel()
 		if err != nil {
-			return errorMsg{
-				err: fmt.Errorf("failed to create pomodoro: %w", err),
+			return fmt.Errorf("failed to load activities: %w", err)
+		}
+
+		items := make([]list.Item, len(activities))
+		for i, activity := range activities {
+			items[i] = activityItem{
+				id:    activity.ID.String(),
+				title: activity.Title,
 			}
 		}
 
-		return pomodoroCreatedMsg{
-			ID: id,
+		return loadActivitiesMsg{
+			Activities: items,
 		}
 	}
 }

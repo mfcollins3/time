@@ -163,10 +163,45 @@
 // For inquiries about commercial licensing, please contact the copyright
 // holder.
 
-package pomodoro
+package selection
 
-import "michaelfcollins3.dev/projects/time/internal/cli/pomodoro/start"
+import (
+	"fmt"
+	"os"
+	"runtime"
 
-func init() {
-	PomodoroCommand.AddCommand(start.StartPomodoroCommand)
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
+)
+
+var SelectActivityCommand = &cobra.Command{
+	Use:   "select",
+	Short: "Select an activity to work with",
+	Long:  ``,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ttyPath := "/dev/tty"
+		if runtime.GOOS == "windows" {
+			ttyPath = "CON"
+		}
+
+		tty, err := os.OpenFile(ttyPath, os.O_RDWR, 0)
+		if err != nil {
+			return fmt.Errorf("failed to open TTY: %w", err)
+		}
+		defer tty.Close()
+
+		p := tea.NewProgram(
+			newModel(cmd.Context()),
+			tea.WithInput(tty),
+			tea.WithOutput(tty),
+			tea.WithAltScreen(),
+		)
+		m, err := p.Run()
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintln(os.Stdout, m.(model).ActivityID)
+		return nil
+	},
 }
