@@ -171,9 +171,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 	"gorm.io/gorm"
 	appcontext "michaelfcollins3.dev/projects/time/internal/context"
 	"michaelfcollins3.dev/projects/time/internal/database"
@@ -188,6 +191,39 @@ func start(
 	activityID dbid.ID,
 	pomodoroDuration time.Duration,
 ) error {
+	// Open TTY for interactive display when stdin is not a TTY (e.g., piped input)
+	// Save original stdin/stdout/stderr
+	origStdin := os.Stdin
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+
+	ttyPath := "/dev/tty"
+	if runtime.GOOS == "windows" {
+		ttyPath = "CON"
+	}
+
+	tty, err := os.OpenFile(ttyPath, os.O_RDWR, 0)
+	if err != nil {
+		return fmt.Errorf("failed to open TTY: %w", err)
+	}
+	defer tty.Close()
+
+	// Detect and set color profile based on the TTY, not stdout
+	// This ensures colors work even when stdout is piped
+	output := termenv.NewOutput(tty)
+	lipgloss.SetColorProfile(output.Profile)
+
+	// Temporarily redirect stdin/stdout/stderr to TTY
+	// This allows Bubble Tea to properly detect and handle terminal mode
+	os.Stdin = tty
+	os.Stdout = tty
+	os.Stderr = tty
+	defer func() {
+		os.Stdin = origStdin
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	startTime := time.Now()
 	pomodoroCtx, cancel := context.WithTimeout(ctx, pomodoroDuration)
 	p := tea.NewProgram(
@@ -207,24 +243,27 @@ func start(
 	}
 
 	if completed {
+		// Restore stdout before printing results so they go to the pipe/terminal
+		os.Stdout = origStdout
+
 		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, 10*time.Second)
 		defer timeoutCancel()
 
 		done, err := playAlarmSound()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to play alarm sound: %v\n", err)
+			fmt.Fprintf(origStderr, "Failed to play alarm sound: %v\n", err)
 		}
 
 		err = showDesktopNotification()
 		if err != nil {
 			fmt.Fprintf(
-				os.Stderr,
+				origStderr,
 				"Failed to show desktop notification: %v\n",
 				err,
 			)
 		}
 
-		fmt.Println(model.pomodoroID.String())
+		fmt.Fprintln(origStdout, model.pomodoroID.String())
 
 		err = completePomodoro(ctx, model, pomodoroDuration)
 		if err != nil {

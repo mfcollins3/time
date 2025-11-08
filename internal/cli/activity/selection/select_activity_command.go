@@ -171,6 +171,8 @@ import (
 	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
 
@@ -179,6 +181,11 @@ var SelectActivityCommand = &cobra.Command{
 	Short: "Select an activity to work with",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Save original stdin/stdout/stderr
+		origStdin := os.Stdin
+		origStdout := os.Stdout
+		origStderr := os.Stderr
+
 		ttyPath := "/dev/tty"
 		if runtime.GOOS == "windows" {
 			ttyPath = "CON"
@@ -190,10 +197,24 @@ var SelectActivityCommand = &cobra.Command{
 		}
 		defer tty.Close()
 
+		// Detect and set color profile based on the TTY, not stdout
+		// This ensures colors work even when stdout is piped
+		output := termenv.NewOutput(tty)
+		lipgloss.SetColorProfile(output.Profile)
+
+		// Temporarily redirect stdin/stdout/stderr to TTY
+		// This allows Bubble Tea to properly detect and handle terminal mode
+		os.Stdin = tty
+		os.Stdout = tty
+		os.Stderr = tty
+		defer func() {
+			os.Stdin = origStdin
+			os.Stdout = origStdout
+			os.Stderr = origStderr
+		}()
+
 		p := tea.NewProgram(
 			newModel(cmd.Context()),
-			tea.WithInput(tty),
-			tea.WithOutput(tty),
 			tea.WithAltScreen(),
 		)
 		m, err := p.Run()
@@ -201,7 +222,8 @@ var SelectActivityCommand = &cobra.Command{
 			return err
 		}
 
-		fmt.Fprintln(os.Stdout, m.(model).ActivityID)
+		// Write the result to original stdout (which may be piped)
+		fmt.Fprintln(origStdout, m.(model).ActivityID)
 		return nil
 	},
 }
