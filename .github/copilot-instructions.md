@@ -31,6 +31,8 @@ Time is a software product that helps users to plan how they are going to spend 
 - Time is implemented in Go. Use the [Go instructions](instructions/go.instructions.md) for writing Go source code. The Time product uses Go 1.25.3.
 - Time uses [GORM](https://gorm.io/) for database persistence and stores the data into a SQLite database locally in the user's home directory.
 - Time uses [Bubble Tea](https://github.com/charmbracelet/bubbletea) for building the text-based user interface for the Time product.
+- Time uses [Cobra](https://github.com/spf13/cobra) for building the command-line interface for the Time program.
+- Time uses [GitHub Actions](https://github.com/features/actions) for implementing CI/CD workflows.
 
 ## Platform Support
 
