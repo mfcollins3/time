@@ -1,0 +1,6 @@
+# Copyright 2026 Michael F. Collins, III
+# Licensed under the Naked Time Source-Available Temporary License
+# See LICENSE.md for license terms.
+
+[settings]
+disable_tools = ["node"]
