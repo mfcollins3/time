@@ -43,6 +43,13 @@ Licensed under the Naked Time Source-Available Temporary License
 See LICENSE.md for license terms.
 ```
 
+## Use GitHub Projects
+
+- Use GitHub Projects to track work on the Naked Time product.
+- Create a new issue for each task or feature that you work on.
+- Link commits to the corresponding issue(s) using the issue number in the commit message (e.g. "fix #123" to link a commit to issue number 123).
+- Use GitHub Projects to track the progress of issues and pull requests, and to manage the overall development process.
+
 ## Architectural Decisions
 
 - Record all important architectural decisions as [Architectural Decision Records](https://adr.github.io/).
