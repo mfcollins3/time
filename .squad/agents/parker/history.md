@@ -30,3 +30,12 @@
 - **Status:** Accepted and merged to main (commit 613c108). ADR-0001 is now the authoritative architecture baseline.
 - **Impact:** Go-based core components, UDS IPC, gRPC APIs, SQLite, plugin system, and cross-platform service registration are locked in. Team cleared for implementation planning.
 
+### 2026-04-12: v0.0.1 Product Specs and Version Target Finalized
+- **Version:** 0.0.1 (not 0.1.0) — per Michael's directive
+- **Duration warnings:** Silently accept all durations — no warnings for < 1 min or > 2 hours
+- **Config file:** Optional with sensible defaults (no auto-creation of config.toml)
+- **CLI framework:** Use Cobra for commands, Viper for configuration (Michael's directive)
+- **Timestamps:** Store in UTC as ISO 8601 TEXT; parse user input as local time (Michael's directive)
+- **Impact on Parker:** Simplify validation logic (no duration bounds), provide sensible defaults for all config keys, use Cobra + Viper for command structure and config loading
+- **Key reference:** `.squad/decisions.md` Decisions #4, #6, #7
+

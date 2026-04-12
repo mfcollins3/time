@@ -30,3 +30,10 @@
 - **Status:** Accepted and merged to main (commit 613c108). ADR-0001 is now the authoritative architecture baseline.
 - **Impact:** Go-based core components, UDS IPC, gRPC APIs, SQLite, plugin system, and cross-platform service registration are locked in. Team cleared for implementation planning.
 
+### 2026-04-12: GORM Evaluation Complete — Stay with Direct SQL
+- **Ripley's finding:** GORM is overkill for ≤8-table schema with simple CRUD + date range filters
+- **Decision:** Use direct SQL via `database/sql` + `modernc.org/sqlite` with `PomodoroStore` interface abstraction
+- **Why:** Schema complexity doesn't warrant ORM overhead, hand-rolled migrations are explicit and sufficient, domain types stay dependency-free, interface decouples CLI from persistence for daemon transition
+- **Impact on Dallas:** Proceed with SQLiteStore implementation. No GORM integration needed.
+- **Key reference:** `.squad/decisions.md` Decision #5
+
