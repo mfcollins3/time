@@ -6,27 +6,36 @@ How to decide who handles what.
 
 | Work Type | Route To | Examples |
 |-----------|----------|----------|
-| {domain 1} | {Name} | {example tasks} |
-| {domain 2} | {Name} | {example tasks} |
-| {domain 3} | {Name} | {example tasks} |
-| Code review | {Name} | Review PRs, check quality, suggest improvements |
-| Testing | {Name} | Write tests, find edge cases, verify fixes |
-| Scope & priorities | {Name} | What to build next, trade-offs, decisions |
+| Architecture & design | Ripley | System architecture, ADRs, Rust vs Go, cross-platform strategy |
+| Code review | Ripley | Review PRs, check quality, enforce architecture decisions |
+| Scope & priorities | Ripley | What to build next, trade-offs, feature scope |
+| Background service | Dallas | Daemon lifecycle, service APIs, data persistence, IPC |
+| API design & impl | Dallas | REST/gRPC endpoints, request/response types, serialization |
+| Data layer | Dallas | Storage, migrations, state management |
+| CLI application | Parker | Argument parsing, subcommands, CLI structure |
+| Terminal UI (TUI) | Parker | Ratatui/crossterm, layouts, widgets, user interaction |
+| UX & interaction design | Parker | User flows, terminal UX, discoverability |
+| Testing | Lambert | Unit tests, integration tests, property-based tests, edge cases |
+| CI/CD test config | Lambert | Cross-platform test matrix, CI pipeline |
+| Quality assurance | Lambert | Bug hunting, regression prevention, coverage |
 | Session logging | Scribe | Automatic — never needs routing |
 
 ## Issue Routing
 
 | Label | Action | Who |
 |-------|--------|-----|
-| `squad` | Triage: analyze issue, assign `squad:{member}` label | Lead |
-| `squad:{name}` | Pick up issue and complete the work | Named member |
+| `squad` | Triage: analyze issue, assign `squad:{member}` label | Ripley |
+| `squad:ripley` | Architecture, design, review tasks | Ripley |
+| `squad:dallas` | Background service, API, data layer tasks | Dallas |
+| `squad:parker` | CLI, TUI, user interaction tasks | Parker |
+| `squad:lambert` | Testing, QA, quality tasks | Lambert |
 
 ### How Issue Assignment Works
 
-1. When a GitHub issue gets the `squad` label, the **Lead** triages it — analyzing content, assigning the right `squad:{member}` label, and commenting with triage notes.
+1. When a GitHub issue gets the `squad` label, **Ripley** triages it — analyzing content, assigning the right `squad:{member}` label, and commenting with triage notes.
 2. When a `squad:{member}` label is applied, that member picks up the issue in their next session.
 3. Members can reassign by removing their label and adding another member's label.
-4. The `squad` label is the "inbox" — untriaged issues waiting for Lead review.
+4. The `squad` label is the "inbox" — untriaged issues waiting for Ripley's review.
 
 ## Rules
 
@@ -36,4 +45,4 @@ How to decide who handles what.
 4. **When two agents could handle it**, pick the one whose domain is the primary concern.
 5. **"Team, ..." → fan-out.** Spawn all relevant agents in parallel as `mode: "background"`.
 6. **Anticipate downstream work.** If a feature is being built, spawn the tester to write test cases from requirements simultaneously.
-7. **Issue-labeled work** — when a `squad:{member}` label is applied to an issue, route to that member. The Lead handles all `squad` (base label) triage.
+7. **Issue-labeled work** — when a `squad:{member}` label is applied to an issue, route to that member. Ripley handles all `squad` (base label) triage.
