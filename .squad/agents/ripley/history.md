@@ -51,3 +51,7 @@
 - **Go ecosystem choices:** `modernc.org/sqlite` (pure Go, no CGO), `bubbletea`/Charm (TUI), `BurntSushi/toml` (config).
 - **Module layout:** `cmd/` for binaries, `internal/` for private packages, `pkg/proto/` for generated code.
 - **ADR status:** Still Proposed. Michael will accept when ready.
+
+### 2026-04-12: ADR-0001 System Architecture Accepted
+- **Status:** Accepted and merged to main (commit 613c108). ADR-0001 is now the authoritative architecture baseline.
+- **Impact:** Core Go architecture, UDS IPC, gRPC APIs, SQLite, plugin system, and cross-platform service registration are locked in. Team cleared for implementation planning.

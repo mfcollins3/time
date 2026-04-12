@@ -1,6 +1,6 @@
 ---
-updated_at: 2026-04-12T02:45:00Z
-focus_area: Project initialization and architecture
+updated_at: 2026-04-12T05:19:00Z
+focus_area: Implementation planning and core component development
 active_issues: []
 ---
 
@@ -8,5 +8,5 @@ active_issues: []
 
 Building Naked Time — a Pomodoro-based time management productivity application in Go (core) + Python (AI agent).
 CLI/TUI + user-scoped background service, cross-platform (Windows, macOS, Linux).
-Early stage: architecture decisions, project structure, Go module setup.
-Language re-evaluation complete: Go replaces Rust for all core components (ADR-0001 updated, still Proposed).
+**ADR-0001 System Architecture is now Accepted and merged to main.** Architecture is locked in. Team is cleared for implementation planning and core component development.
+
