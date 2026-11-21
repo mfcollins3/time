@@ -1,0 +1,7 @@
+# Copyright 2026 Michael F. Collins, III
+
+*                   text=auto
+
+*.md                text eol=lf
+
+.gitattributes      text eol=lf
