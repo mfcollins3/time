@@ -2,6 +2,7 @@
 
 1. [About Naked Time](#about-naked-time)
 1. [Project layout](#project-layout)
+1. [License](#license)
 
 ## About Naked Time
 
@@ -35,5 +36,15 @@ Naked Time is targeted for use by:
 
 ```plain
 (root)/                         Root directory of the Naked Time repository
+|-- LICENSE.md                  The license agreement for the Naked Time product and the source code
 |-- README.md                   (This document) Introductory documentation about Naked Time and how to get started working with the source code and running Naked Time
 ```
+
+## License
+
+Please be sure to review the [license](LICENSE.md). Naked Time is being released
+under a _source available_ license and not an open source license. Naked Time is
+a commercial product that requires users to have a valid license to use the
+product. Licensed users may also use Naked Time source code to customize the
+product for their own use or use the source code to build integrations and
+extensions for the Naked Time product.
