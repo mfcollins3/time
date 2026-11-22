@@ -1,0 +1,23 @@
+# Copyright 2026 Michael F. Collins, III
+# Licensed under the Naked Time license. See LICENSE.md for details.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          release-type: rust
