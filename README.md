@@ -36,25 +36,27 @@ Naked Time is targeted for use by:
 ## Project layout
 
 ```plain
-(root)/                         Root directory of the Naked Time repository
-|-- .claude/                    Claude code settings and customizations
-|   |-- settings.json           Custom settings for Claude Code when working with the Naked Time project
-|-- .github/                    GitHub-specific customizations and GitHub Actions workflows
-|   |-- workflows/              GitHub Actions workflows
-|   |   |-- release-please.yml  GitHub Actions workflow for managing releases using release-please
-|-- .vscode/                    Settings and customizations for Visual Studio Code
-|   |-- settings.json           Custom settings for the Naked Time workspace in Visual Studio Code
-|-- assets/                     Assets and resources for the Naked Time application
-|   |-- alarm.mp3               Alarm sound that plays when a Pomodoro completes
-|-- src/                        Source code for the Naked Time application
-|   |-- main.rs                 Main program for Naked Time's CLI/TUI application
-|-- .gitattributes              Attributes that controls how Git treats files in the repository
-|-- .gitignore                  Specifies which files and directories Git should not include in the repository
-|-- Cargo.lock                  Stores information on Rust crates used by Naked Time and what versions are currently in use
-|-- Cargo.toml                  Rust manifest for the Naked Time product
-|-- CLAUDE.md                   Instructions that are used to customize how Claude Code works for Naked Time
-|-- LICENSE.md                  The license agreement for the Naked Time product and the source code
-|-- README.md                   (This document) Introductory documentation about Naked Time and how to get started working with the source code and running Naked Time
+(root)/                             Root directory of the Naked Time repository
+|-- .claude/                        Claude code settings and customizations
+|   |-- settings.json               Custom settings for Claude Code when working with the Naked Time project
+|-- .github/                        GitHub-specific customizations and GitHub Actions workflows
+|   |-- workflows/                  GitHub Actions workflows
+|   |   |-- release-please.yml      GitHub Actions workflow for managing releases using release-please
+|-- .vscode/                        Settings and customizations for Visual Studio Code
+|   |-- settings.json               Custom settings for the Naked Time workspace in Visual Studio Code
+|-- assets/                         Assets and resources for the Naked Time application
+|   |-- alarm.mp3                   Alarm sound that plays when a Pomodoro completes
+|-- src/                            Source code for the Naked Time application
+|   |-- main.rs                     Main program for Naked Time's CLI/TUI application
+|-- .gitattributes                  Attributes that controls how Git treats files in the repository
+|-- .gitignore                      Specifies which files and directories Git should not include in the repository
+|-- .release-please-manifest.json   Stores the current component version numbers; managed by release-please
+|-- Cargo.lock                      Stores information on Rust crates used by Naked Time and what versions are currently in use
+|-- Cargo.toml                      Rust manifest for the Naked Time product
+|-- CLAUDE.md                       Instructions that are used to customize how Claude Code works for Naked Time
+|-- LICENSE.md                      The license agreement for the Naked Time product and the source code
+|-- README.md                       (This document) Introductory documentation about Naked Time and how to get started working with the source code and running Naked Time
+|-- release-please-config.json      Configuration settings for release-please to control how releases are managed and generated
 ```
 
 ## Getting started
