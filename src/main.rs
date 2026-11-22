@@ -1,6 +1,7 @@
 // Copyright 2026 Michael F. Collins, III
 // Licensed under the Naked Time license. See LICENSE.md for details.
 
+use std::env;
 use std::error::Error;
 use std::io::{self, Cursor, Write, stdout};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
@@ -28,6 +29,14 @@ enum Outcome {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    if env::args()
+        .skip(1)
+        .any(|arg| arg == "--version" || arg == "-V")
+    {
+        println!("naked-time {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     let (tx, rx) = mpsc::channel();
 
     let interrupt_tx = tx.clone();

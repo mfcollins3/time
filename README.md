@@ -36,7 +36,17 @@ Naked Time is targeted for use by:
 
 ## Installing
 
-Download the package for your platform from the
+On macOS (Apple silicon) and Linux (x64, ARM64), install with
+[Homebrew](https://brew.sh):
+
+```sh
+brew install mfcollins3/tap/naked-time
+```
+
+On Linux, Naked Time also needs the ALSA library (`libasound2`) from your
+system package manager.
+
+Alternatively, download the package for your platform from the
 [releases page](https://github.com/mfcollins3/time/releases). Each file has a
 matching `.sha256` checksum.
 
