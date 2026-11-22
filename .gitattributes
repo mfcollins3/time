@@ -3,15 +3,26 @@
 
 *                   text=auto
 
+*.astro             text eol=lf
+*.css               text eol=lf
+*.ico               binary
+*.js                text eol=lf
 *.json              text eol=lf
 *.lock              text eol=lf
 *.md                text eol=lf
+*.mdx               text eol=lf
+*.mjs               text eol=lf
 *.mp3               binary
+*.png               binary
 *.rb                text eol=lf
 *.rs                text eol=lf
 *.sh                text eol=lf
+*.svg               text eol=lf
 *.tmpl              text eol=lf
 *.toml              text eol=lf
+*.ts                text eol=lf
+*.webp              binary
+*.yaml              text eol=lf
 *.yml               text eol=lf
 
 .gitattributes      text eol=lf

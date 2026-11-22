@@ -65,6 +65,8 @@ matching `.sha256` checksum.
 
 Run the program with `naked-time`.
 
+Full documentation is available at <https://mfcollins3.github.io/time/>.
+
 ## Project layout
 
 ```plain
@@ -75,6 +77,7 @@ Run the program with `naked-time`.
 |   |-- workflows/                  GitHub Actions workflows
 |   |   |-- build.yml               Reusable workflow that builds and packages Naked Time for all supported platforms
 |   |   |-- ci.yml                  Runs formatting, lint, and build checks for pull requests and pushes to main
+|   |   |-- docs.yml                Builds the documentation website and publishes it to GitHub Pages
 |   |   |-- release-please.yml      GitHub Actions workflow for managing releases using release-please
 |-- .vscode/                        Settings and customizations for Visual Studio Code
 |   |-- settings.json               Custom settings for the Naked Time workspace in Visual Studio Code
@@ -84,6 +87,7 @@ Run the program with `naked-time`.
 |   |-- adrs/                       Architectural decision records
 |-- src/                            Source code for the Naked Time application
 |   |-- main.rs                     Main program for Naked Time's CLI/TUI application
+|-- website/                        Astro Starlight documentation website published to GitHub Pages
 |-- .gitattributes                  Attributes that controls how Git treats files in the repository
 |-- .gitignore                      Specifies which files and directories Git should not include in the repository
 |-- .release-please-manifest.json   Stores the current component version numbers; managed by release-please
