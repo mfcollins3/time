@@ -90,12 +90,6 @@ Full documentation is available at <https://mfcollins3.github.io/time/>.
 |   |-- Cargo.toml                  Rust manifest for the Naked Time product
 |-- docs/                           Project documentation
 |   |-- adrs/                       Architectural decision records
-<<<<<<< HEAD
-|-- src/                            Source code for the Naked Time application
-|   |-- main.rs                     Main program for Naked Time's CLI/TUI application
-|-- website/                        Astro Starlight documentation website published to GitHub Pages
-=======
->>>>>>> 50b3f56 (refactor: move Rust program into cli subdirectory)
 |-- .gitattributes                  Attributes that controls how Git treats files in the repository
 |-- .gitignore                      Specifies which files and directories Git should not include in the repository
 |-- .release-please-manifest.json   Stores the current component version numbers; managed by release-please
