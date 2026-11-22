@@ -3,11 +3,6 @@ title: Introduction
 description: What Naked Time is and who it is for.
 ---
 
-<!--
-Copyright 2026 Michael F. Collins, III
-Licensed under the Naked Time license. See LICENSE.md for details.
--->
-
 Naked Time is a time planning and tracking application. Its goal is to make
 you more productive in completing value-building activities by letting you
 hyperfocus on what is important and tracking how much time you spend completing
@@ -33,4 +28,4 @@ review your performance and optimize your use of time.
 
 ## Next steps
 
-[Install Naked Time](../installation/) and start your first Pomodoro.
+[Install Naked Time](/time/getting-started/installation/) and start your first Pomodoro.

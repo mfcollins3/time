@@ -3,11 +3,6 @@ title: The Pomodoro Technique
 description: How the Pomodoro Technique works and how Naked Time applies it.
 ---
 
-<!--
-Copyright 2026 Michael F. Collins, III
-Licensed under the Naked Time license. See LICENSE.md for details.
--->
-
 The [Pomodoro Technique](https://en.wikipedia.org/wiki/Pomodoro_Technique) is
 built around a simple cycle:
 

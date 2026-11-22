@@ -3,11 +3,6 @@ title: Installation
 description: Install Naked Time on macOS, Linux, or Windows.
 ---
 
-<!--
-Copyright 2026 Michael F. Collins, III
-Licensed under the Naked Time license. See LICENSE.md for details.
--->
-
 ## Homebrew (macOS and Linux)
 
 On macOS (Apple silicon) and Linux (x64, ARM64), install with
