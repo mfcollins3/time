@@ -2,6 +2,7 @@
 
 1. [About Naked Time](#about-naked-time)
 1. [Project layout](#project-layout)
+1. [Getting started](#getting-started)
 1. [License](#license)
 
 ## About Naked Time
@@ -36,9 +37,64 @@ Naked Time is targeted for use by:
 
 ```plain
 (root)/                         Root directory of the Naked Time repository
+|-- .claude/                    Claude code settings and customizations
+|   |-- settings.json           Custom settings for Claude Code when working with the Naked Time project
+|-- .github/                    GitHub-specific customizations and GitHub Actions workflows
+|   |-- workflows/              GitHub Actions workflows
+|   |   |-- release-please.yml  GitHub Actions workflow for managing releases using release-please
+|-- .vscode/                    Settings and customizations for Visual Studio Code
+|   |-- settings.json           Custom settings for the Naked Time workspace in Visual Studio Code
+|-- assets/                     Assets and resources for the Naked Time application
+|   |-- alarm.mp3               Alarm sound that plays when a Pomodoro completes
+|-- src/                        Source code for the Naked Time application
+|   |-- main.rs                 Main program for Naked Time's CLI/TUI application
+|-- .gitattributes              Attributes that controls how Git treats files in the repository
+|-- .gitignore                  Specifies which files and directories Git should not include in the repository
+|-- Cargo.lock                  Stores information on Rust crates used by Naked Time and what versions are currently in use
+|-- Cargo.toml                  Rust manifest for the Naked Time product
+|-- CLAUDE.md                   Instructions that are used to customize how Claude Code works for Naked Time
 |-- LICENSE.md                  The license agreement for the Naked Time product and the source code
 |-- README.md                   (This document) Introductory documentation about Naked Time and how to get started working with the source code and running Naked Time
 ```
+
+## Getting started
+
+This section has instructions on how to clone the repository and build and run
+the Naked Time application.
+
+### Prerequisites
+
+* [Git](https://git-scm.com)
+* [GitHub CLI](https://cli.github.com)
+* [Rust](https://rust-lang.org/tools/install/)
+
+### Clone the repository
+
+The first step to work with Naked Time's source code is to clone the
+[Git repository](https://github.com/mfcollins3/time) from 
+[GitHub](https://github.com) onto your computer. Open a terminal, navigate to
+the location where you want to host the repository, and run:
+
+```bash
+gh repo clone mfcollins3/time time/main
+cd time/main
+```
+
+This command will clone the Naked Time Git repository and will store it in the
+`src/main` subdirectory. Git will then check out the `main` branch.
+
+### Build and run Naked Time
+
+To build and run Naked Time, use the same terminal or open a new terminal and
+navigate to the directory where the Git repository was cloned to and run:
+
+```bash
+cd time/main      # if necessary
+cargo run
+```
+
+This command will run Naked Time and will begin to record a Pomodoro. When the
+Pomodoro is complete, an alarm will play.
 
 ## License
 
