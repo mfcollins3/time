@@ -85,6 +85,7 @@ Full documentation is available at <https://mfcollins3.github.io/time/>.
 |   |-- assets/                     Assets and resources for the Naked Time application
 |   |   |-- alarm.mp3               Alarm sound that plays when a Pomodoro completes
 |   |-- src/                        Source code for the Naked Time application
+|   |   |-- db.rs                   SQLite persistence for Pomodoros
 |   |   |-- main.rs                 Main program for Naked Time's CLI/TUI application
 |   |-- Cargo.lock                  Stores information on Rust crates used by Naked Time and what versions are currently in use
 |   |-- Cargo.toml                  Rust manifest for the Naked Time product
@@ -150,6 +151,13 @@ cargo run
 
 This command will run Naked Time (the `naked-time` binary) and will begin to record a Pomodoro. When the
 Pomodoro is complete, an alarm will play.
+
+### Where Naked Time stores data
+
+Each Pomodoro is recorded in a SQLite database at
+`$HOME/.naked-time/data.db` (`%USERPROFILE%\.naked-time\data.db` on Windows).
+The database stores a UUIDv7 public identifier and the start and end times as
+UTC timestamps. A Pomodoro that is cancelled or interrupted has no end time.
 
 ## License
 
