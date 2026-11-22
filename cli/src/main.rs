@@ -1,6 +1,8 @@
 // Copyright 2026 Michael F. Collins, III
 // Licensed under the Naked Time license. See LICENSE.md for details.
 
+mod db;
+
 use std::env;
 use std::error::Error;
 use std::io::{self, Cursor, Write, stdout};
@@ -37,6 +39,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
+    let database = db::Database::open_default()?;
+    let pomodoro_id = database.start_pomodoro()?;
+
     let (tx, rx) = mpsc::channel();
 
     let interrupt_tx = tx.clone();
@@ -62,7 +67,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     match countdown(POMODORO_SECONDS, &rx)? {
-        Outcome::Completed => play_alarm()?,
+        Outcome::Completed => {
+            database.complete_pomodoro(pomodoro_id)?;
+            play_alarm()?;
+        }
         Outcome::Ended => {}
     }
     Ok(())
