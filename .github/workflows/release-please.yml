@@ -16,19 +16,22 @@ name: release-please
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
-          release-type: rust
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
       - uses: actions/checkout@v7
       - name: tag major and minor versions
         if: ${{ steps.release.outputs.release_created }}
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git remote add gh-token "https://${{ secrets.MY_RELEASE_PLEASE_TOKEN }}@github.com/googleapis/release-please-action.git"
           git tag -d v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
           git push origin :v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
           git tag -a v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} -m "Release v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}"
@@ -39,3 +42,12 @@ jobs:
             git tag -a v${{ steps.release.outputs.major }} -m "Release v${{ steps.release.outputs.major }}"
             git push origin v${{ steps.release.outputs.major }}
           fi
+
+  build-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      tag_name: ${{ needs.release-please.outputs.tag_name }}

@@ -1,0 +1,40 @@
+# Copyright 2026 Michael F. Collins, III
+# Licensed under the Naked Time license. See LICENSE.md for details.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Install ALSA development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libasound2-dev pkg-config
+      - name: Check formatting
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+  build:
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: write

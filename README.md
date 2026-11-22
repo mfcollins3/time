@@ -1,6 +1,7 @@
 # Naked Time
 
 1. [About Naked Time](#about-naked-time)
+1. [Installing](#installing)
 1. [Project layout](#project-layout)
 1. [Getting started](#getting-started)
 1. [License](#license)
@@ -33,6 +34,22 @@ Naked Time is targeted for use by:
 * small software teams;
 * businesses of all sizes that need to track their employee's time.
 
+## Installing
+
+Download the package for your platform from the
+[releases page](https://github.com/mfcollins3/time/releases). Each file has a
+matching `.sha256` checksum.
+
+* **Windows (x64, ARM64)** and **macOS (Apple silicon)**: download and extract
+  the `.zip` or `.tar.gz` archive.
+* **Linux (x64, ARM64)**: install the `.deb`
+  (`sudo apt install ./naked-time-*.deb`) or the `.rpm`
+  (`sudo dnf install ./naked-time-*.rpm`), which also installs the ALSA audio
+  library. You can also extract the `.tar.gz` archive, which requires
+  `libasound2` (ALSA).
+
+Run the program with `naked-time`.
+
 ## Project layout
 
 ```plain
@@ -41,11 +58,15 @@ Naked Time is targeted for use by:
 |   |-- settings.json               Custom settings for Claude Code when working with the Naked Time project
 |-- .github/                        GitHub-specific customizations and GitHub Actions workflows
 |   |-- workflows/                  GitHub Actions workflows
+|   |   |-- build.yml               Reusable workflow that builds and packages Naked Time for all supported platforms
+|   |   |-- ci.yml                  Runs formatting, lint, and build checks for pull requests and pushes to main
 |   |   |-- release-please.yml      GitHub Actions workflow for managing releases using release-please
 |-- .vscode/                        Settings and customizations for Visual Studio Code
 |   |-- settings.json               Custom settings for the Naked Time workspace in Visual Studio Code
 |-- assets/                         Assets and resources for the Naked Time application
 |   |-- alarm.mp3                   Alarm sound that plays when a Pomodoro completes
+|-- docs/                           Project documentation
+|   |-- adrs/                       Architectural decision records
 |-- src/                            Source code for the Naked Time application
 |   |-- main.rs                     Main program for Naked Time's CLI/TUI application
 |-- .gitattributes                  Attributes that controls how Git treats files in the repository
@@ -95,7 +116,7 @@ cd time/main      # if necessary
 cargo run
 ```
 
-This command will run Naked Time and will begin to record a Pomodoro. When the
+This command will run Naked Time (the `naked-time` binary) and will begin to record a Pomodoro. When the
 Pomodoro is complete, an alarm will play.
 
 ## License
