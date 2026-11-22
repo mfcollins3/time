@@ -32,6 +32,7 @@ assets = [
 
 [package.metadata.generate-rpm]
 name = "naked-time"
+license = "Naked Time license"
 auto-req = "disabled"
 assets = [
     { source = "target/release/naked-time", dest = "/usr/bin/naked-time", mode = "0755" },

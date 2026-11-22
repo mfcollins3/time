@@ -118,6 +118,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
+          sudo apt-get install --yes rpm
           cargo install --locked cargo-deb cargo-generate-rpm
 
           cargo deb --no-build --target "$TARGET" --output "dist/naked-time-${VERSION}-${ARCH}.deb"
