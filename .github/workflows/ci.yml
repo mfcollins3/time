@@ -38,3 +38,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: write
+    with:
+      sign_macos: ${{ github.event_name == 'push' }}
+    secrets: inherit

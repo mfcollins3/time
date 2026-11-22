@@ -103,3 +103,5 @@ containers to confirm `naked-time` is placed on the `PATH`.
 ## More Information
 
 * [release-please action](https://github.com/googleapis/release-please-action)
+* [Sign and notarize macOS builds with Developer ID](draft-sign-and-notarize-macos-builds.md)
+  extends this decision for the macOS target.
