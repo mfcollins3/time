@@ -40,8 +40,13 @@ Download the package for your platform from the
 [releases page](https://github.com/mfcollins3/time/releases). Each file has a
 matching `.sha256` checksum.
 
-* **Windows (x64, ARM64)** and **macOS (Apple silicon)**: download and extract
-  the `.zip` or `.tar.gz` archive.
+* **Windows (x64, ARM64)**: download and extract the `.zip` archive.
+* **macOS (Apple silicon)**: open the signed and notarized `.pkg` installer,
+  which installs `naked-time` into `/usr/local/bin`. You can also extract the
+  `.tar.gz` archive, which contains the same signed and notarized binary; the
+  first launch of the extracted binary requires an internet connection so that
+  macOS can verify the notarization. To uninstall the package, run
+  `sudo rm /usr/local/bin/naked-time && sudo pkgutil --forget software.naked.naked-time`.
 * **Linux (x64, ARM64)**: install the `.deb`
   (`sudo apt install ./naked-time-*.deb`) or the `.rpm`
   (`sudo dnf install ./naked-time-*.rpm`), which also installs the ALSA audio
