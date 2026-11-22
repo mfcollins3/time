@@ -81,18 +81,24 @@ Full documentation is available at <https://mfcollins3.github.io/time/>.
 |   |   |-- release-please.yml      GitHub Actions workflow for managing releases using release-please
 |-- .vscode/                        Settings and customizations for Visual Studio Code
 |   |-- settings.json               Custom settings for the Naked Time workspace in Visual Studio Code
-|-- assets/                         Assets and resources for the Naked Time application
-|   |-- alarm.mp3                   Alarm sound that plays when a Pomodoro completes
+|-- cli/                            The Naked Time CLI/TUI application written in Rust
+|   |-- assets/                     Assets and resources for the Naked Time application
+|   |   |-- alarm.mp3               Alarm sound that plays when a Pomodoro completes
+|   |-- src/                        Source code for the Naked Time application
+|   |   |-- main.rs                 Main program for Naked Time's CLI/TUI application
+|   |-- Cargo.lock                  Stores information on Rust crates used by Naked Time and what versions are currently in use
+|   |-- Cargo.toml                  Rust manifest for the Naked Time product
 |-- docs/                           Project documentation
 |   |-- adrs/                       Architectural decision records
+<<<<<<< HEAD
 |-- src/                            Source code for the Naked Time application
 |   |-- main.rs                     Main program for Naked Time's CLI/TUI application
 |-- website/                        Astro Starlight documentation website published to GitHub Pages
+=======
+>>>>>>> 50b3f56 (refactor: move Rust program into cli subdirectory)
 |-- .gitattributes                  Attributes that controls how Git treats files in the repository
 |-- .gitignore                      Specifies which files and directories Git should not include in the repository
 |-- .release-please-manifest.json   Stores the current component version numbers; managed by release-please
-|-- Cargo.lock                      Stores information on Rust crates used by Naked Time and what versions are currently in use
-|-- Cargo.toml                      Rust manifest for the Naked Time product
 |-- CLAUDE.md                       Instructions that are used to customize how Claude Code works for Naked Time
 |-- LICENSE.md                      The license agreement for the Naked Time product and the source code
 |-- README.md                       (This document) Introductory documentation about Naked Time and how to get started working with the source code and running Naked Time
@@ -131,7 +137,7 @@ To build and run Naked Time, use the same terminal or open a new terminal and
 navigate to the directory where the Git repository was cloned to and run:
 
 ```bash
-cd time/main      # if necessary
+cd time/main/cli  # if necessary
 cargo run
 ```
 
