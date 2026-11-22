@@ -1,0 +1,16 @@
+[package]
+name = "time"
+version = "0.1.0"
+authors = ["Michael Collins <mfcollins3@me.com>"]
+edition = "2024"
+description = "Naked Time is a time management and tracking product that is intended to help users improve their productivity and optimize their time management"
+readme = "README.md"
+repository = "https://github.com/mfcollins3/time"
+license-file = "LICENSE.md"
+keywords = ["naked", "pomodoro", "productivity", "time"]
+categories = ["command-line-utilities"]
+exclude = ["CLAUDE.md"]
+publish = false
+
+[dependencies]
+rodio = "0.23.0"
