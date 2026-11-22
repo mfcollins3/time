@@ -15,3 +15,28 @@ publish = false
 [dependencies]
 ctrlc = "3.5.3"
 rodio = "0.23.0"
+
+[[bin]]
+name = "naked-time"
+path = "src/main.rs"
+
+[package.metadata.deb]
+name = "naked-time"
+section = "utils"
+priority = "optional"
+depends = "$auto"
+assets = [
+    ["target/release/naked-time", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/naked-time/README.md", "644"],
+]
+
+[package.metadata.generate-rpm]
+name = "naked-time"
+auto-req = "disabled"
+assets = [
+    { source = "target/release/naked-time", dest = "/usr/bin/naked-time", mode = "0755" },
+    { source = "README.md", dest = "/usr/share/doc/naked-time/README.md", mode = "0644", doc = true },
+]
+
+[package.metadata.generate-rpm.requires]
+"libasound.so.2()(64bit)" = "*"
