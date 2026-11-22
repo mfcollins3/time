@@ -13,4 +13,5 @@ exclude = ["CLAUDE.md"]
 publish = false
 
 [dependencies]
+ctrlc = "3.5.3"
 rodio = "0.23.0"
