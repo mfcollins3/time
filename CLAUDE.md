@@ -24,6 +24,9 @@ This comment block should be at the top of source files. Source files such as
 shell scripts that have shebang headers can place the shebang header above the
 standard file header comment block.
 
+The standard file header comment is not necessary in documentation files such as
+Markdown or HTML documents.
+
 ## .gitattributes
 
 Any files with new extensions should be added to the `.gitattributes` file to
