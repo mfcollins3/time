@@ -7,7 +7,10 @@
 *.lock              text eol=lf
 *.md                text eol=lf
 *.mp3               binary
+*.rb                text eol=lf
 *.rs                text eol=lf
+*.sh                text eol=lf
+*.tmpl              text eol=lf
 *.toml              text eol=lf
 *.yml               text eol=lf
 
