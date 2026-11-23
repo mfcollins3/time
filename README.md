@@ -90,6 +90,19 @@ Full documentation is available at <https://mfcollins3.github.io/time/>.
 |   |-- Cargo.toml                  Rust manifest for the Naked Time product
 |-- docs/                           Project documentation
 |   |-- adrs/                       Architectural decision records
+|-- website/                        Source code for the product documentation that is published to GitHub Pages
+|   |-- public/                     Static assets used by the documentation website
+|   |   |- favicon.svg              The icon for the website shown in web browsers
+|   |-- src/                        Source code for the website. These are generally Markdown documents that are converted to HTML for the website
+|   |   |-- content/                Content source for the website
+|   |   |   |-- docs/               Content source for the product documentation
+|   |   |-- content.config.ts       Content collection configuration for the website content
+|   |-- .gitignore                  Specifies website files to exclude from the Git repository
+|   |-- .node-version               Configures the version of Node.js used to build the website
+|   |-- astro.config.mjs            Configuration settings that control how Astro generates the documentation website
+|   |-- package.json                Node.js package manifest for the documentation website
+|   |-- pnpm-lock.yaml              Stores dependency and version information for packages used by the documentation website
+|   |-- tsconfig.json               TypeScript compiler configuration settings for building the documentation website
 |-- .gitattributes                  Attributes that controls how Git treats files in the repository
 |-- .gitignore                      Specifies which files and directories Git should not include in the repository
 |-- .release-please-manifest.json   Stores the current component version numbers; managed by release-please
