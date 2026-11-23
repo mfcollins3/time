@@ -33,15 +33,15 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git tag -d v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }} || true
-          git push origin :v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }} || true
-          git tag -a v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }} -m "Release v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }}"
-          git push origin v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }}
+          git tag -d cli/v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }} || true
+          git push origin :cli/v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }} || true
+          git tag -a cli/v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }} -m "Release cli/v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }}"
+          git push origin cli/v${{ steps.release.outputs['src/cli--major'] }}.${{ steps.release.outputs['src/cli--minor'] }}
           if [ "${{ steps.release.outputs['src/cli--major'] }}" != "0" ]; then
-            git tag -d v${{ steps.release.outputs['src/cli--major'] }} || true
-            git push origin :v${{ steps.release.outputs['src/cli--major'] }} || true
-            git tag -a v${{ steps.release.outputs['src/cli--major'] }} -m "Release v${{ steps.release.outputs['src/cli--major'] }}"
-            git push origin v${{ steps.release.outputs['src/cli--major'] }}
+            git tag -d cli/v${{ steps.release.outputs['src/cli--major'] }} || true
+            git push origin :cli/v${{ steps.release.outputs['src/cli--major'] }} || true
+            git tag -a cli/v${{ steps.release.outputs['src/cli--major'] }} -m "Release cli/v${{ steps.release.outputs['src/cli--major'] }}"
+            git push origin cli/v${{ steps.release.outputs['src/cli--major'] }}
           fi
 
   build-release:

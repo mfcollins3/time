@@ -1,9 +1,10 @@
 {
   "packages": {
     "src/cli": {
+      "component": "cli",
+      "include-component-in-tag": true,
       "changelog-path": "CHANGELOG.md",
       "release-type": "rust",
-      "include-component-in-tag": false,
       "bump-minor-pre-major": false,
       "bump-patch-for-minor-pre-major": false,
       "draft": false,
@@ -27,5 +28,6 @@
     }
   },
   "separate-pull-requests": true,
+  "tag-separator": "/",
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }
