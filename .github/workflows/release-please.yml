@@ -20,6 +20,9 @@ jobs:
       release_created: ${{ steps.release.outputs['src/cli--release_created'] }}
       tag_name: ${{ steps.release.outputs['src/cli--tag_name'] }}
       version: ${{ steps.release.outputs['src/cli--version'] }}
+      ios_release_created: ${{ steps.release.outputs['src/apple--release_created'] }}
+      ios_tag_name: ${{ steps.release.outputs['src/apple--tag_name'] }}
+      ios_body: ${{ steps.release.outputs['src/apple--body'] }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -53,6 +56,19 @@ jobs:
     with:
       tag_name: ${{ needs.release-please.outputs.tag_name }}
       sign_macos: true
+    secrets: inherit
+
+  ios-testflight:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.ios_release_created == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ios-build.yml
+    with:
+      ref: ${{ needs.release-please.outputs.ios_tag_name }}
+      deliver: true
+      external: true
+      changelog: ${{ needs.release-please.outputs.ios_body }}
     secrets: inherit
 
   homebrew:

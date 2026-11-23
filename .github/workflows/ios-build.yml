@@ -1,0 +1,190 @@
+# Copyright 2026 Michael F. Collins, III
+# Licensed under the Naked Time license. See LICENSE.md for details.
+
+name: ios-build
+
+# Reusable workflow that builds and tests the Naked Time iOS app and,
+# optionally, delivers it to TestFlight.
+#
+# * Without `deliver`, the app is generated with Tuist and the unit tests are
+#   run. No secrets are used.
+# * With `deliver`, the app is also archived, exported, and uploaded to
+#   TestFlight with Fastlane. The build number is the latest TestFlight build
+#   number plus one, so every delivery path shares one counter.
+# * With `external`, the build is also assigned to the external group and
+#   submitted for Beta App Review, with `changelog` as "What to Test".
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to build (empty for the triggering ref)
+        type: string
+        required: false
+        default: ""
+      deliver:
+        description: Archive the app and upload it to TestFlight
+        type: boolean
+        required: false
+        default: false
+      external:
+        description: Also distribute the build to external testers
+        type: boolean
+        required: false
+        default: false
+      changelog:
+        description: '"What to Test" text for external builds'
+        type: string
+        required: false
+        default: ""
+    secrets:
+      APPLE_API_KEY_P8:
+        description: Base64-encoded App Store Connect API key (.p8)
+        required: false
+      APPLE_API_KEY_ID:
+        description: App Store Connect API key ID
+        required: false
+      APPLE_API_ISSUER_ID:
+        description: App Store Connect API issuer ID
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    # Deliveries are serialized so that two jobs never pick the same build
+    # number. Test-only runs never queue.
+    concurrency:
+      group: ${{ inputs.deliver && 'ios-testflight' || format('ios-test-{0}', github.run_id) }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: src/apple
+    env:
+      INTERNAL_GROUP: Internal
+      EXTERNAL_GROUP: Early Adopters
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          xcode=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -n 1)
+          sudo xcode-select -s "$xcode"
+          xcodebuild -version
+
+      - uses: jdx/mise-action@v2
+
+      - uses: ruby/setup-ruby@v1
+        if: inputs.deliver
+        with:
+          ruby-version: ruby
+          bundler-cache: true
+          working-directory: src/apple
+
+      - name: Decode App Store Connect API key
+        if: inputs.deliver
+        env:
+          API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          key="$RUNNER_TEMP/AuthKey.p8"
+          echo "$API_KEY_P8" | base64 --decode > "$key"
+          {
+            echo "APP_STORE_CONNECT_API_KEY_PATH=$key"
+            echo "APPLE_API_KEY_ID=$API_KEY_ID"
+            echo "APPLE_API_ISSUER_ID=$API_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Determine build number
+        id: build_number
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.deliver }}" = "true" ]; then
+            export BUILD_NUMBER_FILE="$RUNNER_TEMP/build-number"
+            bundle exec fastlane next_build_number
+            echo "value=$(cat "$BUILD_NUMBER_FILE")" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate the Xcode workspace
+        env:
+          TUIST_BUILD_NUMBER: ${{ steps.build_number.outputs.value }}
+        run: |
+          tuist install
+          tuist generate --no-open
+
+      - name: Run unit tests
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -workspace Time.xcworkspace \
+            -scheme Time \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -resultBundlePath "$RUNNER_TEMP/Test.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-test-results
+          path: ${{ runner.temp }}/Test.xcresult
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Archive
+        if: inputs.deliver
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -workspace Time.xcworkspace \
+            -scheme Time \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Time.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_API_KEY_PATH" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID"
+
+      - name: Export IPA
+        if: inputs.deliver
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Time.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist ci/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$APP_STORE_CONNECT_API_KEY_PATH" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPLE_API_ISSUER_ID"
+
+      - name: Upload to TestFlight
+        if: inputs.deliver
+        env:
+          EXTERNAL: ${{ inputs.external }}
+          CHANGELOG: ${{ inputs.changelog }}
+        run: |
+          set -euo pipefail
+          groups="$INTERNAL_GROUP"
+          if [ "$EXTERNAL" = "true" ]; then
+            groups="$groups,$EXTERNAL_GROUP"
+          fi
+          bundle exec fastlane beta \
+            ipa:"$RUNNER_TEMP/export/Time.ipa" \
+            groups:"$groups" \
+            external:"$EXTERNAL" \
+            changelog:"$CHANGELOG"
+
+      - name: Remove API key
+        if: always() && inputs.deliver
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
