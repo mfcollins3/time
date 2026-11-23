@@ -63,7 +63,8 @@ matching `.sha256` checksum.
   library. You can also extract the `.tar.gz` archive, which requires
   `libasound2` (ALSA).
 
-Run the program with `naked-time`.
+Run `naked-time --help` to see the available commands, and start a Pomodoro with
+`naked-time pomodoro start`.
 
 Full documentation is available at <https://mfcollins3.github.io/time/>.
 
@@ -146,10 +147,11 @@ navigate to the directory where the Git repository was cloned to and run:
 
 ```bash
 cd time/main/cli  # if necessary
-cargo run
+cargo run -- pomodoro start
 ```
 
-This command will run Naked Time (the `naked-time` binary) and will begin to record a Pomodoro. When the
+This command will run Naked Time (the `naked-time` binary) with the
+`pomodoro start` command and will begin to record a Pomodoro. When the
 Pomodoro is complete, an alarm will play.
 
 ### Where Naked Time stores data
@@ -158,6 +160,20 @@ Each Pomodoro is recorded in a SQLite database at
 `$HOME/.naked-time/data.db` (`%USERPROFILE%\.naked-time\data.db` on Windows).
 The database stores a UUIDv7 public identifier and the start and end times as
 UTC timestamps. A Pomodoro that is cancelled or interrupted has no end time.
+
+### Localization
+
+All text shown to the user comes from [Fluent](https://projectfluent.org/)
+files in `cli/i18n/<language>/time.ftl` that are embedded in the binary. English
+(`en-US`) is the fallback language. To add a translation, copy
+`cli/i18n/en-US/time.ftl` to `cli/i18n/<language-tag>/time.ftl` (for example
+`fr`) and translate the values. Do not change the message IDs.
+
+The language is chosen from the operating system settings. Set `NAKED_TIME_LANG`
+(for example `NAKED_TIME_LANG=fr`) to override it. Set `NAKED_TIME_PSEUDO=1` to
+pseudo-localize all text, which makes any string that is still hard-coded in
+English stand out. Error messages produced by clap when it cannot parse the
+command line are not localized yet.
 
 ## License
 

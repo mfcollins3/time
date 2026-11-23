@@ -1,188 +1,154 @@
 // Copyright 2026 Michael F. Collins, III
 // Licensed under the Naked Time license. See LICENSE.md for details.
 
+mod commands;
 mod db;
+mod i18n;
 
-use std::env;
-use std::error::Error;
-use std::io::{self, Cursor, Write, stdout};
-use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
-use std::thread;
-use std::time::{Duration, Instant};
+use std::process::ExitCode;
 
-const POMODORO_SECONDS: u64 = 25 * 60;
-const ALARM: &[u8] = include_bytes!("../assets/alarm.mp3");
-const PROMPT: &str = "A Pomodoro is in progress. End it? (y/N) ";
+use clap::builder::styling::Style;
+use clap::{
+    Arg, ArgAction, Command as ClapCommand, CommandFactory, FromArgMatches, Parser, Subcommand,
+};
 
-/// Something the user did that the countdown needs to react to.
-enum Event {
-    /// The user pressed CTRL+C.
-    Interrupt,
-    /// The user entered a line of text and pressed Enter.
-    Line(String),
-    /// Standard input was closed.
-    InputClosed,
+use crate::commands::pomodoro::POMODORO_SECONDS;
+use crate::i18n::fl;
+
+// User-facing text is not set here. It is applied from the localized
+// resources in `localized_command`.
+#[derive(Parser)]
+#[command(name = "naked-time", version, arg_required_else_help = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
 }
 
-/// How the countdown finished.
-enum Outcome {
-    Completed,
-    Ended,
+#[derive(Subcommand)]
+enum Command {
+    #[command(subcommand, arg_required_else_help = true)]
+    Pomodoro(PomodoroCommand),
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    if env::args()
-        .skip(1)
-        .any(|arg| arg == "--version" || arg == "-V")
-    {
-        println!("naked-time {}", env!("CARGO_PKG_VERSION"));
-        return Ok(());
-    }
-
-    let database = db::Database::open_default()?;
-    let pomodoro_id = database.start_pomodoro()?;
-
-    let (tx, rx) = mpsc::channel();
-
-    let interrupt_tx = tx.clone();
-    ctrlc::set_handler(move || {
-        let _ = interrupt_tx.send(Event::Interrupt);
-    })?;
-
-    // Read standard input on its own thread so that the countdown keeps
-    // running while the user decides how to answer the prompt.
-    thread::spawn(move || {
-        let stdin = io::stdin();
-        loop {
-            let mut line = String::new();
-            let event = match stdin.read_line(&mut line) {
-                Ok(0) | Err(_) => Event::InputClosed,
-                Ok(_) => Event::Line(line),
-            };
-            let closed = matches!(event, Event::InputClosed);
-            if tx.send(event).is_err() || closed {
-                break;
-            }
-        }
-    });
-
-    match countdown(POMODORO_SECONDS, &rx)? {
-        Outcome::Completed => {
-            database.complete_pomodoro(pomodoro_id)?;
-            play_alarm()?;
-        }
-        Outcome::Ended => {}
-    }
-    Ok(())
+#[derive(Subcommand)]
+enum PomodoroCommand {
+    Start,
 }
 
-/// Counts down from `total` seconds, showing the time remaining once per
-/// second.
-///
-/// If the user presses CTRL+C, a confirmation prompt is shown below the time
-/// while the countdown continues. Answering `y` ends the Pomodoro; answering
-/// `n` removes the prompt and the countdown carries on.
-fn countdown(total: u64, events: &Receiver<Event>) -> io::Result<Outcome> {
-    let start = Instant::now();
-    let mut out = stdout().lock();
-    let mut prompting = false;
-
-    for elapsed in 0..=total {
-        let remaining = total - elapsed;
-        // "\x1b[K" clears to end of line so a shorter time (e.g. "9:59" after
-        // "10:00") doesn't leave a stale trailing character.
-        if prompting {
-            // The time is on the line above the prompt. Save the cursor, which
-            // is wherever the user is typing, redraw the time, and restore it.
-            write!(
-                out,
-                "\x1b7\x1b[1A\r{}:{:02}\x1b[K\x1b8",
-                remaining / 60,
-                remaining % 60
-            )?;
-        } else {
-            write!(out, "\r{}:{:02}\x1b[K", remaining / 60, remaining % 60)?;
-        }
-        out.flush()?;
-
-        if remaining == 0 {
-            break;
-        }
-
-        // Wait for the next whole-second tick (avoiding cumulative drift)
-        // while handling anything the user does in the meantime.
-        let next_tick = start + Duration::from_secs(elapsed + 1);
-        loop {
-            let timeout = next_tick.saturating_duration_since(Instant::now());
-            let event = match events.recv_timeout(timeout) {
-                Ok(event) => event,
-                Err(RecvTimeoutError::Timeout) => break,
-                Err(RecvTimeoutError::Disconnected) => {
-                    thread::sleep(timeout);
-                    break;
-                }
-            };
-
-            match event {
-                Event::Interrupt if !prompting => {
-                    prompting = true;
-                    write!(out, "\n{PROMPT}")?;
-                    out.flush()?;
-                }
-                Event::Interrupt => {}
-                Event::Line(_) if !prompting => {}
-                Event::Line(line) => match line.trim().to_ascii_lowercase().as_str() {
-                    "y" => {
-                        // Move up over the time and prompt and clear them.
-                        write!(out, "\x1b[2A\r\x1b[J")?;
-                        out.flush()?;
-                        return Ok(Outcome::Ended);
-                    }
-                    // An empty answer (just Enter) selects the default, "n".
-                    "n" | "" => {
-                        prompting = false;
-                        // Clear the prompt, leaving the cursor on the time.
-                        write!(out, "\x1b[1A\r\x1b[J\x1b[1A\r")?;
-                        out.flush()?;
-                        // Redraw the time immediately on its own line.
-                        let remaining = total.saturating_sub(start.elapsed().as_secs());
-                        write!(out, "{}:{:02}\x1b[K", remaining / 60, remaining % 60)?;
-                        out.flush()?;
-                    }
-                    _ => {
-                        // Invalid answer: replace it with a fresh prompt.
-                        write!(out, "\x1b[1A\r\x1b[J{PROMPT}")?;
-                        out.flush()?;
-                    }
-                },
-                Event::InputClosed => {
-                    // No way to answer, so carry on as if the user said no.
-                    if prompting {
-                        prompting = false;
-                        write!(out, "\r\x1b[J\x1b[1A\r")?;
-                        out.flush()?;
-                    }
-                }
-            }
-        }
-    }
-
-    if prompting {
-        // The Pomodoro finished while the prompt was showing; remove it.
-        write!(out, "\r\x1b[J")?;
-    } else {
-        writeln!(out)?;
-    }
-    Ok(Outcome::Completed)
+/// Builds the command line definition with all text localized, including
+/// clap's own help scaffolding.
+fn localized_command() -> ClapCommand {
+    localize(Cli::command(), true)
 }
 
-/// Plays the embedded alarm sound and blocks until it finishes.
-fn play_alarm() -> Result<(), Box<dyn Error>> {
-    let mut sink = rodio::DeviceSinkBuilder::open_default_sink()?;
-    // We block until playback finishes, so dropping the sink afterward is safe.
-    sink.log_on_drop(false);
-    let player = rodio::Player::connect_new(sink.mixer());
-    player.append(rodio::Decoder::try_from(Cursor::new(ALARM))?);
-    player.sleep_until_end();
-    Ok(())
+fn localize(cmd: ClapCommand, root: bool) -> ClapCommand {
+    let about = match cmd.get_name() {
+        "naked-time" => Some(fl!("app-about")),
+        "pomodoro" => Some(fl!("cmd-pomodoro-about")),
+        "start" => {
+            let minutes: u64 = POMODORO_SECONDS / 60;
+            Some(fl!("cmd-pomodoro-start-about", minutes = minutes))
+        }
+        _ => None,
+    };
+
+    let header = Style::new().bold().underline();
+    let template = format!(
+        "{{about-with-newline}}\n{header}{}{header:#} {{usage}}\n\n{{all-args}}{{after-help}}",
+        fl!("help-usage-heading")
+    );
+
+    let names: Vec<String> = cmd
+        .get_subcommands()
+        .map(|sub| sub.get_name().to_string())
+        .collect();
+
+    let mut cmd = cmd
+        .disable_help_flag(true)
+        .disable_help_subcommand(true)
+        .subcommand_help_heading(fl!("help-commands-heading"))
+        .next_help_heading(fl!("help-options-heading"))
+        .subcommand_value_name(fl!("help-command-placeholder"))
+        .help_template(template)
+        .arg(
+            Arg::new("help")
+                .short('h')
+                .long("help")
+                .action(ArgAction::Help)
+                .global(false)
+                .help(fl!("help-flag-help")),
+        );
+    if let Some(about) = about {
+        cmd = cmd.about(about);
+    }
+    if root {
+        cmd = cmd.disable_version_flag(true).arg(
+            Arg::new("version")
+                .short('V')
+                .long("version")
+                .action(ArgAction::Version)
+                .help(fl!("help-flag-version")),
+        );
+    }
+    for name in names {
+        cmd = cmd.mut_subcommand(name, |sub| localize(sub, false));
+    }
+    cmd
+}
+
+fn main() -> ExitCode {
+    i18n::init();
+
+    let matches = localized_command().get_matches();
+    let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
+    let result = match cli.command {
+        Command::Pomodoro(PomodoroCommand::Start) => commands::pomodoro::start(),
+    };
+
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("{}", fl!("error-prefix", message = error.to_string()));
+            ExitCode::FAILURE
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn help(args: &[&str]) -> String {
+        localized_command()
+            .try_get_matches_from(args)
+            .expect_err("help should exit early")
+            .to_string()
+    }
+
+    #[test]
+    fn command_definition_is_valid() {
+        localized_command().debug_assert();
+    }
+
+    #[test]
+    fn root_help_is_localized() {
+        let text = help(&["naked-time", "--help"]);
+        assert!(text.contains("Usage:"), "{text}");
+        assert!(text.contains("Commands:"), "{text}");
+        assert!(text.contains("Options:"), "{text}");
+        assert!(text.contains("Work with Pomodoros"), "{text}");
+        assert!(text.contains("Print help"), "{text}");
+        assert!(text.contains("Print version"), "{text}");
+        assert!(!text.contains("Print this message"), "{text}");
+    }
+
+    #[test]
+    fn subcommand_help_is_localized() {
+        let text = help(&["naked-time", "pomodoro", "start", "--help"]);
+        assert!(
+            text.contains("Start a 25-minute Pomodoro and record it"),
+            "{text}"
+        );
+        assert!(text.contains("Print help"), "{text}");
+    }
 }

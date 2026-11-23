@@ -11,6 +11,8 @@ use std::time::Duration;
 use rusqlite::Connection;
 use uuid::Uuid;
 
+use crate::i18n::fl;
+
 /// SQL expression producing the current UTC time as an ISO-8601 string with
 /// millisecond precision, e.g. `2026-11-21T14:03:07.123Z`.
 const NOW: &str = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
@@ -37,7 +39,7 @@ impl Database {
     /// Opens the database at `$HOME/.naked-time/data.db` (the user profile
     /// directory on Windows), creating the directory and schema if needed.
     pub fn open_default() -> Result<Self, Box<dyn Error>> {
-        let home = std::env::home_dir().ok_or("unable to determine the home directory")?;
+        let home = std::env::home_dir().ok_or_else(|| fl!("error-no-home-dir"))?;
         let dir = home.join(".naked-time");
         fs::create_dir_all(&dir)?;
         Ok(Self::open(&dir.join("data.db"))?)

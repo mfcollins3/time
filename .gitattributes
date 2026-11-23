@@ -6,6 +6,7 @@
 *.astro             text eol=lf
 *.code-workspace    text eol=lf
 *.css               text eol=lf
+*.ftl               text eol=lf
 *.ico               binary
 *.js                text eol=lf
 *.json              text eol=lf
