@@ -1,6 +1,8 @@
 ---
 title: Installation
 description: Install Naked Time on macOS, Linux, or Windows.
+sidebar:
+  order: 2
 ---
 
 ## Homebrew (macOS and Linux)
