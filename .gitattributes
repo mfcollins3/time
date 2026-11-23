@@ -15,6 +15,7 @@
 *.mdx               text eol=lf
 *.mjs               text eol=lf
 *.mp3               binary
+*.plist             text eol=lf
 *.png               binary
 *.rb                text eol=lf
 *.rs                text eol=lf
@@ -30,5 +31,8 @@
 *.yml               text eol=lf
 
 .gitattributes      text eol=lf
+Appfile             text eol=lf
+Fastfile            text eol=lf
+Gemfile             text eol=lf
 .gitignore          text eol=lf
 .node-version       text eol=lf

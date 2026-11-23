@@ -1,0 +1,58 @@
+# Copyright 2026 Michael F. Collins, III
+# Licensed under the Naked Time license. See LICENSE.md for details.
+
+# Fastlane is used only for the App Store Connect side of delivery. Building,
+# testing, and archiving are done with Tuist and xcodebuild (see
+# .github/workflows/ios-build.yml).
+#
+# Environment:
+#   APP_STORE_CONNECT_API_KEY_PATH  path to the decoded App Store Connect .p8
+#   APPLE_API_KEY_ID                App Store Connect API key ID
+#   APPLE_API_ISSUER_ID             App Store Connect API issuer ID
+
+default_platform(:ios)
+
+APP_IDENTIFIER = "software.naked.time"
+
+# TestFlight limits "What to Test" to 4000 characters.
+CHANGELOG_LIMIT = 4000
+
+def connect_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("APPLE_API_KEY_ID"),
+    issuer_id: ENV.fetch("APPLE_API_ISSUER_ID"),
+    key_filepath: ENV.fetch("APP_STORE_CONNECT_API_KEY_PATH"),
+    in_house: false
+  )
+end
+
+platform :ios do
+  desc "Write the next TestFlight build number to the file named by BUILD_NUMBER_FILE"
+  lane :next_build_number do
+    latest = latest_testflight_build_number(
+      app_identifier: APP_IDENTIFIER,
+      api_key: connect_api_key,
+      initial_build_number: 0
+    )
+    File.write(ENV.fetch("BUILD_NUMBER_FILE"), (latest + 1).to_s)
+  end
+
+  desc "Upload an IPA to TestFlight. Options: ipa, groups, changelog, external"
+  lane :beta do |options|
+    external = options[:external].to_s == "true"
+    groups = options[:groups].to_s.split(",").map(&:strip).reject(&:empty?)
+
+    # Internal builds are not waited on: the Internal group has automatic
+    # distribution enabled in App Store Connect. External builds must wait for
+    # processing so that the "What to Test" text and groups can be applied and
+    # the build submitted for Beta App Review.
+    upload_to_testflight(
+      api_key: connect_api_key,
+      ipa: options.fetch(:ipa),
+      groups: groups,
+      changelog: options[:changelog].to_s[0, CHANGELOG_LIMIT],
+      distribute_external: external,
+      skip_waiting_for_build_processing: !external
+    )
+  end
+end
