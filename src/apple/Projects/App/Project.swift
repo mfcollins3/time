@@ -10,6 +10,7 @@ let project = Project(
         base: [
             "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": true,
             "ENABLE_USER_SCRIPT_SANDBOXING": true,
+            "MARKETING_VERSION": "0.0.0", // x-release-please-version
             "STRING_CATALOG_GENERATE_SYMBOLS": true
         ],
         configurations: [
