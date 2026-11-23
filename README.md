@@ -161,6 +161,20 @@ Each Pomodoro is recorded in a SQLite database at
 The database stores a UUIDv7 public identifier and the start and end times as
 UTC timestamps. A Pomodoro that is cancelled or interrupted has no end time.
 
+### Localization
+
+All text shown to the user comes from [Fluent](https://projectfluent.org/)
+files in `cli/i18n/<language>/time.ftl` that are embedded in the binary. English
+(`en-US`) is the fallback language. To add a translation, copy
+`cli/i18n/en-US/time.ftl` to `cli/i18n/<language-tag>/time.ftl` (for example
+`fr`) and translate the values. Do not change the message IDs.
+
+The language is chosen from the operating system settings. Set `NAKED_TIME_LANG`
+(for example `NAKED_TIME_LANG=fr`) to override it. Set `NAKED_TIME_PSEUDO=1` to
+pseudo-localize all text, which makes any string that is still hard-coded in
+English stand out. Error messages produced by clap when it cannot parse the
+command line are not localized yet.
+
 ## License
 
 Please be sure to review the [license](LICENSE.md). Naked Time is being released

@@ -10,10 +10,10 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::db;
+use crate::i18n::fl;
 
-const POMODORO_SECONDS: u64 = 25 * 60;
+pub(crate) const POMODORO_SECONDS: u64 = 25 * 60;
 const ALARM: &[u8] = include_bytes!("../../assets/alarm.mp3");
-const PROMPT: &str = "A Pomodoro is in progress. End it? (y/N) ";
 
 /// Something the user did that the countdown needs to react to.
 enum Event {
@@ -70,6 +70,28 @@ pub fn start() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// How the user answered the confirmation prompt.
+#[derive(Debug, PartialEq)]
+enum Answer {
+    Yes,
+    No,
+    Invalid,
+}
+
+/// Interprets a line typed at the prompt. The localized answers are accepted
+/// along with the English `y` and `n`, so a partially translated locale stays
+/// usable. An empty answer (just Enter) selects the default, no.
+fn classify_answer(line: &str, yes: &str, no: &str) -> Answer {
+    let answer = line.trim().to_lowercase();
+    if answer == yes || answer == "y" {
+        Answer::Yes
+    } else if answer.is_empty() || answer == no || answer == "n" {
+        Answer::No
+    } else {
+        Answer::Invalid
+    }
+}
+
 /// Counts down from `total` seconds, showing the time remaining once per
 /// second.
 ///
@@ -80,6 +102,11 @@ fn countdown(total: u64, events: &Receiver<Event>) -> io::Result<Outcome> {
     let start = Instant::now();
     let mut out = stdout().lock();
     let mut prompting = false;
+    // Fluent trims trailing whitespace, so the space after the prompt is added
+    // here.
+    let prompt = format!("{} ", fl!("pomodoro-end-prompt"));
+    let yes = fl!("pomodoro-answer-yes").to_lowercase();
+    let no = fl!("pomodoro-answer-no").to_lowercase();
 
     for elapsed in 0..=total {
         let remaining = total - elapsed;
@@ -120,20 +147,20 @@ fn countdown(total: u64, events: &Receiver<Event>) -> io::Result<Outcome> {
             match event {
                 Event::Interrupt if !prompting => {
                     prompting = true;
-                    write!(out, "\n{PROMPT}")?;
+                    write!(out, "\n{prompt}")?;
                     out.flush()?;
                 }
                 Event::Interrupt => {}
                 Event::Line(_) if !prompting => {}
-                Event::Line(line) => match line.trim().to_ascii_lowercase().as_str() {
-                    "y" => {
+                Event::Line(line) => match classify_answer(&line, &yes, &no) {
+                    Answer::Yes => {
                         // Move up over the time and prompt and clear them.
                         write!(out, "\x1b[2A\r\x1b[J")?;
                         out.flush()?;
                         return Ok(Outcome::Ended);
                     }
                     // An empty answer (just Enter) selects the default, "n".
-                    "n" | "" => {
+                    Answer::No => {
                         prompting = false;
                         // Clear the prompt, leaving the cursor on the time.
                         write!(out, "\x1b[1A\r\x1b[J\x1b[1A\r")?;
@@ -143,9 +170,9 @@ fn countdown(total: u64, events: &Receiver<Event>) -> io::Result<Outcome> {
                         write!(out, "{}:{:02}\x1b[K", remaining / 60, remaining % 60)?;
                         out.flush()?;
                     }
-                    _ => {
+                    Answer::Invalid => {
                         // Invalid answer: replace it with a fresh prompt.
-                        write!(out, "\x1b[1A\r\x1b[J{PROMPT}")?;
+                        write!(out, "\x1b[1A\r\x1b[J{prompt}")?;
                         out.flush()?;
                     }
                 },
@@ -179,4 +206,24 @@ fn play_alarm() -> Result<(), Box<dyn Error>> {
     player.append(rodio::Decoder::try_from(Cursor::new(ALARM))?);
     player.sleep_until_end();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn classifies_answers() {
+        assert_eq!(classify_answer("y\n", "y", "n"), Answer::Yes);
+        assert_eq!(classify_answer(" N ", "y", "n"), Answer::No);
+        assert_eq!(classify_answer("\n", "y", "n"), Answer::No);
+        assert_eq!(classify_answer("maybe", "y", "n"), Answer::Invalid);
+    }
+
+    #[test]
+    fn accepts_localized_and_english_answers() {
+        assert_eq!(classify_answer("Oui", "oui", "non"), Answer::Yes);
+        assert_eq!(classify_answer("non", "oui", "non"), Answer::No);
+        assert_eq!(classify_answer("y", "oui", "non"), Answer::Yes);
+    }
 }
