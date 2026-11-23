@@ -59,12 +59,31 @@ The iOS app is configured in `Projects/App/Project.swift`:
   `x-release-please-version`. Do not edit it by hand and keep the marker on the
   same line.
 * **Build number** (`CURRENT_PROJECT_VERSION`, `CFBundleVersion`) comes from the
-  `TUIST_BUILD_NUMBER` environment variable and defaults to `1`. CI should pass
-  `github.run_number`:
+  `TUIST_BUILD_NUMBER` environment variable and defaults to `1`. CI delivery
+  passes the latest TestFlight build number plus one (the Fastlane
+  `next_build_number` lane):
 
   ```bash
   TUIST_BUILD_NUMBER=42 tuist generate
   ```
+
+## CI/CD and TestFlight
+
+* `.github/workflows/ios.yml` builds and runs the unit tests for pull requests
+  that touch `src/apple`. Merges to `main` also upload a build to the
+  `Internal` TestFlight group.
+* A release-please `ios/vX.Y.Z` release uploads a build to `Internal` and
+  `Early Adopters` (external) and submits it for Beta App Review, with the
+  release notes as "What to Test" (`release-please.yml`).
+* Both use `.github/workflows/ios-build.yml`: Tuist + `xcodebuild` build, test,
+  archive, and export (`ci/ExportOptions.plist`); Fastlane (`fastlane/Fastfile`)
+  only talks to App Store Connect.
+* Secrets: `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`. The
+  key needs the Admin role for cloud-managed signing.
+* The `Internal` group must have automatic distribution enabled in App Store
+  Connect, because internal uploads do not wait for build processing.
+
+Run Fastlane locally with `bundle install` in this directory.
 
 ## Directory layout
 
