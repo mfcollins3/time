@@ -46,6 +46,18 @@ let project = Project(
             resources: [
                 "Resources/**"
             ]
+        ),
+        .target(
+            name: "TimeTests",
+            destinations: [
+                .iPad,
+                .iPhone
+            ],
+            product: .unitTests,
+            bundleId: "software.naked.time.tests",
+            sources: [
+                "Tests/**"
+            ]
         )
     ]
 )
