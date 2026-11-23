@@ -60,8 +60,10 @@ Both packages also install the ALSA audio library. You can also extract the
 
 ## Run Naked Time
 
-Run the program with:
+Start a Pomodoro with:
 
 ```sh
-naked-time
+naked-time pomodoro start
 ```
+
+Run `naked-time --help` to see all available commands.
