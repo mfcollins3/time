@@ -1,6 +1,6 @@
 {
   "packages": {
-    "cli": {
+    "src/cli": {
       "changelog-path": "CHANGELOG.md",
       "release-type": "rust",
       "include-component-in-tag": false,

@@ -4,13 +4,13 @@
             "path": "."
         },
         {
-            "path": "cli"
+            "path": "src/cli"
         },
         {
             "path": "website"
         },
         {
-            "path": "apple"
+            "path": "src/apple"
         }
     ]
 }
