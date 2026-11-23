@@ -38,7 +38,8 @@ let project = Project(
             deploymentTargets: .iOS("27.0"),
             infoPlist: .extendingDefault(with: [
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
-                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)"
+                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                "ITSAppUsesNonExemptEncryption": false
             ]),
             sources: [
                 "Sources/**"
