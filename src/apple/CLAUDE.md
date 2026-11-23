@@ -44,6 +44,28 @@ the Tuist CLI:
 tuist install
 ```
 
+## Signing and versioning
+
+The iOS app is configured in `Projects/App/Project.swift`:
+
+* **Code signing** is automatic (`CODE_SIGN_STYLE = Automatic`) using Apple
+  Developer team `WTG7RTG947`. Xcode picks Apple Development for debug builds
+  and Apple Distribution when archiving. CI archives must pass
+  `-allowProvisioningUpdates` along with an App Store Connect API key
+  (`-authenticationKeyPath`, `-authenticationKeyID`,
+  `-authenticationKeyIssuerID`).
+* **Marketing version** (`MARKETING_VERSION`, `CFBundleShortVersionString`) is
+  owned by release-please, which rewrites the line marked
+  `x-release-please-version`. Do not edit it by hand and keep the marker on the
+  same line.
+* **Build number** (`CURRENT_PROJECT_VERSION`, `CFBundleVersion`) comes from the
+  `TUIST_BUILD_NUMBER` environment variable and defaults to `1`. CI should pass
+  `github.run_number`:
+
+  ```bash
+  TUIST_BUILD_NUMBER=42 tuist generate
+  ```
+
 ## Directory layout
 
 ```plain
