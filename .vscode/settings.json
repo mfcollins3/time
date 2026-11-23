@@ -1,5 +1,8 @@
 {
     "cSpell.words": [
         "Pomodoro"
+    ],
+    "rust-analyzer.linkedProjects": [
+        "cli/Cargo.toml"
     ]
 }

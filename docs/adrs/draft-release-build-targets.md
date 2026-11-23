@@ -56,7 +56,7 @@ because it avoids cross-compilation and gives working audio on desktop Linux.
 * **Linux packages.** Besides tarballs, Linux builds produce `.deb`
   (`cargo-deb`) and `.rpm` (`cargo-generate-rpm`) packages that declare the
   ALSA runtime dependency.
-* **Binary name.** The binary is named `naked-time` (`[[bin]]` in `Cargo.toml`)
+* **Binary name.** The binary is named `naked-time` (`[[bin]]` in `cli/Cargo.toml`)
   because `time` conflicts with `/usr/bin/time` from the GNU `time` package and
   with the shell `time` keyword. The crate name remains `time`.
 * **Workflow structure.** A reusable workflow, `build.yml`, performs the build.

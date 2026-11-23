@@ -4,12 +4,11 @@ version = "0.1.0"
 authors = ["Michael Collins <mfcollins3@me.com>"]
 edition = "2024"
 description = "Naked Time is a time management and tracking product that is intended to help users improve their productivity and optimize their time management"
-readme = "README.md"
+readme = "../README.md"
 repository = "https://github.com/mfcollins3/time"
-license-file = "LICENSE.md"
+license-file = "../LICENSE.md"
 keywords = ["naked", "pomodoro", "productivity", "time"]
 categories = ["command-line-utilities"]
-exclude = ["CLAUDE.md"]
 publish = false
 
 [dependencies]
@@ -27,7 +26,7 @@ priority = "optional"
 depends = "$auto"
 assets = [
     ["target/release/naked-time", "usr/bin/", "755"],
-    ["README.md", "usr/share/doc/naked-time/README.md", "644"],
+    ["../README.md", "usr/share/doc/naked-time/README.md", "644"],
 ]
 
 [package.metadata.generate-rpm]
@@ -36,7 +35,7 @@ license = "Naked Time license"
 auto-req = "disabled"
 assets = [
     { source = "target/release/naked-time", dest = "/usr/bin/naked-time", mode = "0755" },
-    { source = "README.md", dest = "/usr/share/doc/naked-time/README.md", mode = "0644", doc = true },
+    { source = "../README.md", dest = "/usr/share/doc/naked-time/README.md", mode = "0644", doc = true },
 ]
 
 [package.metadata.generate-rpm.requires]

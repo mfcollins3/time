@@ -19,12 +19,17 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: cli
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli -> target
       - name: Install ALSA development libraries
         run: |
           sudo apt-get update
