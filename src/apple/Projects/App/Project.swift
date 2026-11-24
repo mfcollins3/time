@@ -9,10 +9,10 @@ let buildNumber = Environment.buildNumber.getString(default: "1")
 
 let project = Project(
     name: "Time",
-    organizationName: "Michael Collins",
+    organizationName: "Naked Software, LLC",
     settings: .settings(
         base: SettingsDictionary()
-            .automaticCodeSigning(devTeam: "WTG7RTG947")
+            .automaticCodeSigning(devTeam: "NZXG7K5N83")
             .appleGenericVersioningSystem()
             .currentProjectVersion(buildNumber)
             .merging([
