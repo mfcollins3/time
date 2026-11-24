@@ -39,7 +39,7 @@ from an environment variable", because it needs the least secret handling and
 works the same locally and in CI.
 
 * **Signing.** `Project.swift` sets `CODE_SIGN_STYLE = Automatic` and
-  `DEVELOPMENT_TEAM = WTG7RTG947`. CI archives use `-allowProvisioningUpdates`
+  `DEVELOPMENT_TEAM = NZXG7K5N83`. CI archives use `-allowProvisioningUpdates`
   with an App Store Connect API key.
 * **Marketing version.** `MARKETING_VERSION` stays owned by release-please via
   the `x-release-please-version` marker.
