@@ -16,7 +16,10 @@ let project = Project(
             .appleGenericVersioningSystem()
             .currentProjectVersion(buildNumber)
             .merging([
+                "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                 "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": true,
+                "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+                "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": true,
                 "ENABLE_USER_SCRIPT_SANDBOXING": true,
                 "MARKETING_VERSION": "0.0.0", // x-release-please-version
                 "STRING_CATALOG_GENERATE_SYMBOLS": true
@@ -37,9 +40,11 @@ let project = Project(
             bundleId: "software.naked.time",
             deploymentTargets: .iOS("27.0"),
             infoPlist: .extendingDefault(with: [
+                "CFBundleIconName": "AppIcon",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
-                "ITSAppUsesNonExemptEncryption": false
+                "ITSAppUsesNonExemptEncryption": false,
+                "UILaunchScreen": [:]
             ]),
             sources: [
                 "Sources/**"
