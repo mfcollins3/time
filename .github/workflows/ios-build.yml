@@ -53,7 +53,8 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-26
+    # arm64 image with Xcode 27 (https://github.com/actions/runner-images)
+    runs-on: xcode-27
     # Deliveries are serialized so that two jobs never pick the same build
     # number. Test-only runs never queue.
     concurrency:
