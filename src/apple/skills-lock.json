@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "using-tuist-generated-projects": {
+      "source": "tuist/agent-skills",
+      "commit": "5da5c0f67df8277de699d64782a3810f9d30ee1b",
+      "sourceType": "github",
+      "skillPath": "skills/generated-projects/SKILL.md",
+      "computedHash": "2a89cf07012a15a0fdaaf3107f3ebf6fad676ad8f574b3821c093810ee940714"
+    }
+  }
+}
