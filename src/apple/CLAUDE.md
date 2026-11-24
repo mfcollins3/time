@@ -49,7 +49,7 @@ tuist install
 The iOS app is configured in `Projects/App/Project.swift`:
 
 * **Code signing** is automatic (`CODE_SIGN_STYLE = Automatic`) using Apple
-  Developer team `WTG7RTG947`. Xcode picks Apple Development for debug builds
+  Developer team `NZXG7K5N83`. Xcode picks Apple Development for debug builds
   and Apple Distribution when archiving. CI archives must pass
   `-allowProvisioningUpdates` along with an App Store Connect API key
   (`-authenticationKeyPath`, `-authenticationKeyID`,
