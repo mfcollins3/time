@@ -85,7 +85,8 @@ jobs:
       - uses: ruby/setup-ruby@v1
         if: inputs.deliver
         with:
-          ruby-version: ruby
+          # Keep in sync with the Ruby used to generate src/apple/Gemfile.lock.
+          ruby-version: "3.4"
           bundler-cache: true
           working-directory: src/apple
 
