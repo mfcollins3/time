@@ -3,6 +3,6 @@
         "Pomodoro"
     ],
     "rust-analyzer.linkedProjects": [
-        "cli/Cargo.toml"
+        "src/cli/Cargo.toml"
     ]
 }

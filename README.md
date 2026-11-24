@@ -82,16 +82,18 @@ Full documentation is available at <https://mfcollins3.github.io/time/>.
 |   |   |-- release-please.yml      GitHub Actions workflow for managing releases using release-please
 |-- .vscode/                        Settings and customizations for Visual Studio Code
 |   |-- settings.json               Custom settings for the Naked Time workspace in Visual Studio Code
-|-- cli/                            The Naked Time CLI/TUI application written in Rust
-|   |-- assets/                     Assets and resources for the Naked Time application
-|   |   |-- alarm.mp3               Alarm sound that plays when a Pomodoro completes
-|   |-- src/                        Source code for the Naked Time application
-|   |   |-- db.rs                   SQLite persistence for Pomodoros
-|   |   |-- main.rs                 Main program for Naked Time's CLI/TUI application
-|   |-- Cargo.lock                  Stores information on Rust crates used by Naked Time and what versions are currently in use
-|   |-- Cargo.toml                  Rust manifest for the Naked Time product
 |-- docs/                           Project documentation
 |   |-- adrs/                       Architectural decision records
+|-- src/                            Source code for the Naked Time applications
+|   |-- apple/                      The Naked Time iOS application
+|   |-- cli/                        The Naked Time CLI/TUI application written in Rust
+|   |   |-- assets/                 Assets and resources for the Naked Time application
+|   |   |   |-- alarm.mp3           Alarm sound that plays when a Pomodoro completes
+|   |   |-- src/                    Source code for the Naked Time application
+|   |   |   |-- db.rs               SQLite persistence for Pomodoros
+|   |   |   |-- main.rs             Main program for Naked Time's CLI/TUI application
+|   |   |-- Cargo.lock              Stores information on Rust crates used by Naked Time and what versions are currently in use
+|   |   |-- Cargo.toml              Rust manifest for the Naked Time product
 |-- website/                        Source code for the product documentation that is published to GitHub Pages
 |   |-- public/                     Static assets used by the documentation website
 |   |   |- favicon.svg              The icon for the website shown in web browsers
@@ -146,7 +148,7 @@ To build and run Naked Time, use the same terminal or open a new terminal and
 navigate to the directory where the Git repository was cloned to and run:
 
 ```bash
-cd time/main/cli  # if necessary
+cd time/main/src/cli  # if necessary
 cargo run -- pomodoro start
 ```
 
@@ -164,9 +166,9 @@ UTC timestamps. A Pomodoro that is cancelled or interrupted has no end time.
 ### Localization
 
 All text shown to the user comes from [Fluent](https://projectfluent.org/)
-files in `cli/i18n/<language>/time.ftl` that are embedded in the binary. English
+files in `src/cli/i18n/<language>/time.ftl` that are embedded in the binary. English
 (`en-US`) is the fallback language. To add a translation, copy
-`cli/i18n/en-US/time.ftl` to `cli/i18n/<language-tag>/time.ftl` (for example
+`src/cli/i18n/en-US/time.ftl` to `src/cli/i18n/<language-tag>/time.ftl` (for example
 `fr`) and translate the values. Do not change the message IDs.
 
 The language is chosen from the operating system settings. Set `NAKED_TIME_LANG`

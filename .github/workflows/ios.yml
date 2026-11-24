@@ -1,0 +1,41 @@
+# Copyright 2026 Michael F. Collins, III
+# Licensed under the Naked Time license. See LICENSE.md for details.
+
+name: ios
+
+# Pull requests build and test the iOS app. Merges to `main` also deliver an
+# internal TestFlight build. Releases (release-please `ios/v*` tags) are
+# delivered to external testers by release-please.yml.
+
+on:
+  pull_request:
+    paths:
+      - src/apple/**
+      - .github/workflows/ios*.yml
+      - .mise.toml
+  push:
+    branches:
+      - main
+    paths:
+      - src/apple/**
+      - .github/workflows/ios*.yml
+      - .mise.toml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ios:
+    uses: ./.github/workflows/ios-build.yml
+    with:
+      # Release-please merge commits are delivered by release-please.yml with
+      # the release notes, so only test them here.
+      deliver: >-
+        ${{ github.event_name != 'pull_request'
+        && !startsWith(github.event.head_commit.message, 'chore(main): release') }}
+    secrets: inherit

@@ -17,14 +17,18 @@ tag="$1"
 version="$2"
 sha_dir="$3"
 output="$4"
+# The tag may include a component prefix (e.g. "cli/v1.2.3"). Asset file
+# names use only the final path component (e.g. "v1.2.3").
+asset_tag="${tag##*/}"
 template="$(cd "$(dirname "$0")/.." && pwd)/packaging/homebrew/naked-time.rb.tmpl"
 
 contents=$(cat "$template")
 contents=${contents//@TAG@/$tag}
+contents=${contents//@ASSET_TAG@/$asset_tag}
 contents=${contents//@VERSION@/$version}
 
 for target in aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
-  file="$sha_dir/naked-time-${tag}-${target}.tar.gz.sha256"
+  file="$sha_dir/naked-time-${asset_tag}-${target}.tar.gz.sha256"
   if [ ! -f "$file" ]; then
     echo "error: missing checksum file $file" >&2
     exit 1

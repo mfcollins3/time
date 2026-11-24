@@ -40,7 +40,7 @@ Chosen option: "Project Fluent with `i18n-embed`", because Fluent handles
 grammatical variation well, `fl!` checks message IDs and arguments at compile
 time, and resources are embedded in the binary with `rust-embed`.
 
-* Resources live in `cli/i18n/<language>/time.ftl`. `en-US` is the fallback.
+* Resources live in `src/cli/i18n/<language>/time.ftl`. `en-US` is the fallback.
 * The language comes from `NAKED_TIME_LANG` or the operating system, resolved
   by `i18n-embed`'s desktop requester. `NAKED_TIME_PSEUDO=1` pseudo-localizes
   all text to expose hard-coded strings.
