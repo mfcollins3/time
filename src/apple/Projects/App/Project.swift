@@ -37,9 +37,11 @@ let project = Project(
             bundleId: "software.naked.time",
             deploymentTargets: .iOS("27.0"),
             infoPlist: .extendingDefault(with: [
+                "CFBundleIconName": "AppIcon",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
-                "ITSAppUsesNonExemptEncryption": false
+                "ITSAppUsesNonExemptEncryption": false,
+                "UILaunchScreen": [:]
             ]),
             sources: [
                 "Sources/**"
