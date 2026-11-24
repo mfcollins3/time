@@ -64,6 +64,8 @@ jobs:
       run:
         working-directory: src/apple
     env:
+      # Keep in sync with the Xcode version used for local development.
+      XCODE_VERSION: "27.2"
       INTERNAL_GROUP: Internal
       EXTERNAL_GROUP: Early Adopters
     steps:
@@ -74,8 +76,8 @@ jobs:
       - name: Select Xcode
         run: |
           set -euo pipefail
-          xcode=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -n 1)
-          sudo xcode-select -s "$xcode"
+          sudo xcode-select -s "/Applications/Xcode_$XCODE_VERSION.app"
+          xcodebuild -version | grep -q "^Xcode $XCODE_VERSION\$"
           xcodebuild -version
 
       - uses: jdx/mise-action@v2
