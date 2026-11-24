@@ -5,9 +5,18 @@ name: ci
 
 on:
   pull_request:
+    paths:
+      - src/cli/**
+      - .github/workflows/ci.yml
+      - .github/workflows/build.yml
   push:
     branches:
       - main
+    paths:
+      - src/cli/**
+      - .github/workflows/ci.yml
+      - .github/workflows/build.yml
+  workflow_dispatch:
 
 permissions:
   contents: read
