@@ -12,6 +12,11 @@ name: build
 # * With `sign_macos`, the macOS binary is signed with a Developer ID
 #   Application certificate, and a Developer ID Installer-signed .pkg is built,
 #   notarized by Apple and stapled. The .tar.gz contains the signed binary.
+# * With `sign_windows`, the Windows binaries are Authenticode-signed with
+#   Azure Artifact Signing. The caller must grant `id-token: write`.
+#
+# The Windows binaries are compiled by the `build` job and signed and packaged
+# by the `windows` job, because the signing action does not run on ARM runners.
 
 on:
   workflow_call:
@@ -23,6 +28,11 @@ on:
         default: ""
       sign_macos:
         description: Sign and notarize the macOS build (requires the Apple secrets)
+        type: boolean
+        required: false
+        default: false
+      sign_windows:
+        description: Sign the Windows binaries (requires the Azure secrets and variables)
         type: boolean
         required: false
         default: false
@@ -48,6 +58,15 @@ on:
       APPLE_API_ISSUER_ID:
         description: App Store Connect API issuer ID
         required: false
+      AZURE_CLIENT_ID:
+        description: Client ID of the Entra application used for code signing
+        required: false
+      AZURE_TENANT_ID:
+        description: Microsoft Entra tenant ID
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        description: Azure subscription ID of the Artifact Signing account
+        required: false
 
 permissions:
   contents: read
@@ -67,20 +86,15 @@ jobs:
         include:
           - target: x86_64-pc-windows-msvc
             runner: windows-latest
-            archive: zip
           - target: aarch64-pc-windows-msvc
             runner: windows-11-arm
-            archive: zip
           - target: aarch64-apple-darwin
             runner: macos-latest
-            archive: tar.gz
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-22.04
-            archive: tar.gz
             arch: x86_64
           - target: aarch64-unknown-linux-gnu
             runner: ubuntu-22.04-arm
-            archive: tar.gz
             arch: aarch64
     steps:
       - uses: actions/checkout@v7
@@ -163,7 +177,17 @@ jobs:
           codesign --verify --strict --verbose=2 "$exe"
           codesign -dvv "$exe"
 
+      - name: Upload unsigned Windows binary
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-${{ matrix.target }}
+          path: src/cli/target/${{ matrix.target }}/release/naked-time.exe
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Determine package version
+        if: runner.os != 'Windows'
         id: version
         shell: bash
         working-directory: src/cli
@@ -180,26 +204,19 @@ jobs:
           fi
 
       - name: Package
+        if: runner.os != 'Windows'
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.name }}
           TARGET: ${{ matrix.target }}
-          ARCHIVE: ${{ matrix.archive }}
         run: |
           set -euo pipefail
           name="naked-time-${VERSION}-${TARGET}"
-          exe="naked-time"
-          if [ "$RUNNER_OS" = "Windows" ]; then exe="naked-time.exe"; fi
-
           mkdir -p "dist/$name"
-          cp "src/cli/target/$TARGET/release/$exe" README.md LICENSE.md "dist/$name/"
+          cp "src/cli/target/$TARGET/release/naked-time" README.md LICENSE.md "dist/$name/"
 
           cd dist
-          if [ "$ARCHIVE" = "zip" ]; then
-            7z a -tzip "$name.zip" "$name" > /dev/null
-          else
-            tar czf "$name.tar.gz" "$name"
-          fi
+          tar czf "$name.tar.gz" "$name"
           rm -rf "$name"
 
       - name: Build macOS installer package
@@ -291,6 +308,7 @@ jobs:
           fi
 
       - name: Checksums
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
@@ -315,11 +333,146 @@ jobs:
           fi
 
       - name: Upload workflow artifacts
-        if: inputs.tag_name == ''
+        if: runner.os != 'Windows' && inputs.tag_name == ''
         uses: actions/upload-artifact@v7
         with:
           name: naked-time-${{ matrix.target }}
           path: dist/*
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Attach to GitHub release
+        if: runner.os != 'Windows' && inputs.tag_name != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: gh release upload "$TAG_NAME" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+
+  windows:
+    name: sign and package Windows
+    needs: build
+    # Run even if another platform failed. The downloads below fail if either
+    # Windows build did not produce its binary.
+    if: ${{ !cancelled() }}
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download x64 binary
+        uses: actions/download-artifact@v8
+        with:
+          name: unsigned-x86_64-pc-windows-msvc
+          path: bin/x86_64-pc-windows-msvc
+
+      - name: Download ARM64 binary
+        uses: actions/download-artifact@v8
+        with:
+          name: unsigned-aarch64-pc-windows-msvc
+          path: bin/aarch64-pc-windows-msvc
+
+      - name: Sign in to Azure
+        if: inputs.sign_windows
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign Windows binaries
+        if: inputs.sign_windows
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_CERTIFICATE_PROFILE }}
+          files-folder: ${{ github.workspace }}\bin
+          files-folder-filter: exe
+          files-folder-recurse: true
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          description: Naked Time
+          description-url: ${{ github.server_url }}/${{ github.repository }}
+
+      - name: Verify signatures
+        if: inputs.sign_windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(Get-ChildItem -Path bin -Recurse -Filter *.exe)
+          if ($files.Count -ne 2) {
+            throw "Expected 2 executables, found $($files.Count)"
+          }
+          foreach ($file in $files) {
+            $signature = Get-AuthenticodeSignature -FilePath $file.FullName
+            Write-Host "$($file.FullName): $($signature.Status)"
+            if ($signature.Status -ne 'Valid') {
+              throw "Invalid signature: $($signature.StatusMessage)"
+            }
+            if (-not $signature.TimeStamperCertificate) {
+              throw "Signature is not timestamped: $($file.FullName)"
+            }
+            Write-Host "  Signer:      $($signature.SignerCertificate.Subject)"
+            Write-Host "  Timestamper: $($signature.TimeStamperCertificate.Subject)"
+          }
+
+      - name: Determine package version
+        id: version
+        shell: bash
+        working-directory: src/cli
+        env:
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "$TAG_NAME" ]; then
+            # Strip the component prefix (e.g. "cli/v1.2.3" -> "v1.2.3") so that
+            # artifact file names do not contain a slash.
+            echo "name=${TAG_NAME##*/}" >> "$GITHUB_OUTPUT"
+          else
+            version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+            echo "name=v$version-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          mkdir dist
+          for target in x86_64-pc-windows-msvc aarch64-pc-windows-msvc; do
+            name="naked-time-${VERSION}-${target}"
+            mkdir "dist/$name"
+            cp "bin/$target/naked-time.exe" README.md LICENSE.md "dist/$name/"
+            (
+              cd dist
+              7z a -tzip "$name.zip" "$name" > /dev/null
+              rm -rf "$name"
+              sha256sum "$name.zip" > "$name.zip.sha256"
+            )
+          done
+          ls -l dist
+
+      # One artifact per target, matching the names used by the other platforms.
+      - name: Upload x64 workflow artifact
+        if: inputs.tag_name == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: naked-time-x86_64-pc-windows-msvc
+          path: dist/*-x86_64-pc-windows-msvc.zip*
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload ARM64 workflow artifact
+        if: inputs.tag_name == ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: naked-time-aarch64-pc-windows-msvc
+          path: dist/*-aarch64-pc-windows-msvc.zip*
           retention-days: 7
           if-no-files-found: error
 
