@@ -21,7 +21,7 @@ let project = Project(
                 "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
                 "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": true,
                 "ENABLE_USER_SCRIPT_SANDBOXING": true,
-                "MARKETING_VERSION": "0.0.0", // x-release-please-version
+                "MARKETING_VERSION": "0.1.0", // x-release-please-version
                 "STRING_CATALOG_GENERATE_SYMBOLS": true
             ]) { _, new in new },
         configurations: [
